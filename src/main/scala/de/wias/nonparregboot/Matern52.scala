@@ -6,7 +6,7 @@ import breeze._
 import breeze.numerics.{exp, sqrt}
 
 object Matern52 {
-  import GPR._
+  import KRR._
 
   def apply(scale : Double) : Kernel = (a: DV, b: DV) => {
     val d = norm(a - b) / scale * sqrt(5d)

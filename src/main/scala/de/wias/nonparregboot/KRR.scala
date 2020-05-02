@@ -5,7 +5,7 @@ import breeze.stats.distributions.MultivariateGaussian
 import cats.Apply
 
 
-object GPR {
+object KRR {
   type DV = DenseVector[Double]
 
   type Kernel = (DV, DV) => Double
@@ -27,16 +27,14 @@ object GPR {
     override def map[A, B](fa: IndexedSeq[A])(f: A => B): IndexedSeq[B] = fa.map(f)
   }
 
-  def apply(sigma2: Double, kernel: Kernel): Learner = (X: Covariates, Y: Responses) => {
-    val K = getK(X, X, kernel) + sigma2*DenseMatrix.eye[Double](X.size)
+  def apply(rho: Double, kernel: Kernel): Learner = (X: Covariates, Y: Responses) => (Xstar: Covariates) => {
+    val K = getK(X, X, kernel) + (X.size * rho) * DenseMatrix.eye[Double](X.size)
     val L = cholesky(K)
     val alpha = L.t \ (L \ Y)
 
-    (Xstar: Covariates) => {
-      val kstar = getK(X, Xstar, kernel)
-      val mean = kstar.t * alpha
-      mean
-    }
+    val kstar = getK(X, Xstar, kernel)
+    val mean = kstar.t * alpha
+    mean
   }
 
   private def getK(X: Covariates, X1:Covariates, kernel: Kernel) = {
