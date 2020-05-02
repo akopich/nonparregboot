@@ -13,14 +13,20 @@ import breeze.numerics._
 import breeze.plot._
 
 object Main extends App {
-  private val sigma2 = 0.01
-  val n = 10
+  val sigma2 = 0.01
+  val n = 40000
+  val P = 400
   val s = 3d
-  val rho = 0.01 * math.pow(n, -2*s / (2*s + 1))
-  println(rho)
-  val fstar = (x: Double) => sin(x * math.Pi * 2d)
-  val (x, y) = SampleDataset(n, sigma2, fstar)()
-  val predictor = KRR(rho, Matern52(1d))(x, y)
-  val yhat = predictor(x)
-  println(norm(yhat - y)/sqrt(n))
+  val rho = 0.001 * math.pow(n, -2*s / (2*s + 1))
+
+  val ft = SuccessProbabilityEstimator(200) {
+    val fstar = (x: Double) => sin(x * math.Pi * 2d)
+    val (x, y, _) = SampleDataset(n, sigma2, fstar)()
+    val (t, _, f) = SampleDataset(10, sigma2, fstar)()
+    val el = KRR.fastKRR(P, rho, Matern52(1d))
+    val (l, u) = Bootstrap.confidenceIntevals(5000, 0.95, el, x, y, t)
+    all(l <:< f) && all(f <:< u)
+  }
+
+  println(ft)
 }
