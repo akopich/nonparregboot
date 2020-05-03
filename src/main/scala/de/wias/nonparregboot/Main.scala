@@ -12,8 +12,10 @@ import breeze.linalg._
 import breeze.numerics._
 import breeze.plot._
 import KRR._
+import com.github.fommil.netlib.BLAS
 
 object Main extends App {
+  println(BLAS.getInstance().getClass.getName)
   val sigma2 = 0.01
   val n = 20000
   val P = 400
