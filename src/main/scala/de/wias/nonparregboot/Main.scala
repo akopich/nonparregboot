@@ -27,11 +27,10 @@ object Main extends App {
   val ft = StochasticAverager(200) {
     val fstar = (x: Double) => sin(x * math.Pi * 2d)
     val (x, y, _) = SampleDataset(n, sigma2, fstar)()
-    val (xOut, _, fOut) = SampleDataset(n, sigma2, fstar)()
     val (t, _, ft) = SampleDataset(10, sigma2, fstar)()
     val el = KRR.fastKRR(P, rho, Matern52(1d))
     val (ep, (l, u)) = Bootstrap.confidenceIntevals(5000, 0.95, el, x, y, t)
-    (RMSE(average(ep), xOut, fOut), if (between(l, ft, u)) 1d else 0d)
+    (RMSE(average(ep), t, ft), if (between(l, ft, u)) 1d else 0d)
   }
 
   println(ft)
