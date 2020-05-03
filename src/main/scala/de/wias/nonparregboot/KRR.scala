@@ -20,7 +20,7 @@ object KRR {
 
   type Predictor = Covariates => Responses
 
-  type EnsemblePredictor = NonEmptyList[Predictor]
+  type EnsemblePredictor = Seq[Predictor]
 
   type Learner = (Covariates, Responses) => Predictor
 
@@ -50,8 +50,7 @@ object KRR {
   def fastKRR(P: Int, rho: Double, kernel: Kernel): EnsembleLearner = (x: Covariates, y: Responses) => {
     val chunkSize = x.size / P
     val learner = krr(rho, kernel)
-    val predictors = (x.grouped(chunkSize) zip y.toArray.grouped(chunkSize).map(_.toSeq.toDV)).map(tupled(learner)).toList
-    NonEmptyList(predictors.head, predictors.tail)
+    (x.grouped(chunkSize) zip y.toArray.grouped(chunkSize).map(_.toSeq.toDV)).map(tupled(learner)).toVector
   }
 
   def krr(rho: Double, kernel: Kernel): Learner = (X: Covariates, Y: Responses) => (Xstar: Covariates) => {
