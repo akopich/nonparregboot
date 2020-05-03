@@ -25,10 +25,10 @@ object Main extends App {
   val ft = SuccessProbabilityEstimator(200) {
     val fstar = (x: Double) => sin(x * math.Pi * 2d)
     val (x, y, _) = SampleDataset(n, sigma2, fstar)()
-    val (t, _, f) = SampleDataset(10, sigma2, fstar)()
+    val (t, _, ft) = SampleDataset(10, sigma2, fstar)()
     val el = KRR.fastKRR(P, rho, Matern52(1d))
     val (l, u) = Bootstrap.confidenceIntevals(5000, 0.95, el, x, y, t)
-    between(l, f, u)
+    between(l, ft, u)
   }
 
   println(ft)
