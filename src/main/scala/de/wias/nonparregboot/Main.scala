@@ -12,7 +12,6 @@ import breeze.linalg._
 import breeze.numerics._
 import breeze.plot._
 import KRR._
-import ChainingCMP._
 
 object Main extends App {
   val sigma2 = 0.01
@@ -27,7 +26,7 @@ object Main extends App {
     val (t, _, f) = SampleDataset(10, sigma2, fstar)()
     val el = KRR.fastKRR(P, rho, Matern52(1d))
     val (l, u) = Bootstrap.confidenceIntevals(5000, 0.95, el, x, y, t)
-    l.chain <= f <= u
+    between(l, f, u)
   }
 
   println(ft)

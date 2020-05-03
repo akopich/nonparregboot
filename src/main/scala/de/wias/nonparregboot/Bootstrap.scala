@@ -9,8 +9,6 @@ import cats.implicits._
 import Function._
 import scala.reflect.ClassTag
 
-import ChainingCMP._
-
 case class Bootstrap[T](value: T)
 
 object Bootstrap {
@@ -49,7 +47,7 @@ object Bootstrap {
   }
 
   def chanceRejection(preds: Seq[Responses], lower: DV, upper: DV) = {
-    preds.count(resp => lower.chain <= resp <= upper).toDouble / preds.size
+    preds.count(between(lower, _, upper)).toDouble / preds.size
   }
 
   def boot(iter: Int, el: EnsembleLearner, x: Covariates, y: Responses, t: Covariates) = {

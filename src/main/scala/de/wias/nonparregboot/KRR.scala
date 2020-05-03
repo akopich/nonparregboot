@@ -28,10 +28,11 @@ object KRR {
 
   type DataSampler = () => (Covariates, Responses, DV)
 
+  def between(l: DV, m: DV, u: DV) = all(l <:< m) && all(m <:< u)
 
-  implicit val partialOrderDV = new PartialOrder[DV] {
-    override def partialCompare(x: DV, y: DV): Double = if (all(x <:< y)) -1d else if (all(x >:> y)) 1d else 0d
-  }
+//  implicit val partialOrderDV = new PartialOrder[DV] {
+//    override def partialCompare(x: DV, y: DV): Double = if (all(x <:< y)) -1d else if (all(x >:> y)) 1d else 0d
+//  }
 
   implicit val vecSemigroup = new Semigroup[DV] {
     override def combine(x: DV, y: DV): DV = x + y
