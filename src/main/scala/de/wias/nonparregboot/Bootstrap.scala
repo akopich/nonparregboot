@@ -53,7 +53,7 @@ object Bootstrap {
   def boot(iter: Int, el: EnsembleLearner, x: Covariates, y: Responses, t: Covariates) = {
     val ep = el(x, y)
     val resps = ep.map(_(t))
-    (0 until iter).map(_ => resps.reduce(_ + _) / resps.length.toDouble)
+    (0 until iter).map(_ => sampleBootPredictors(resps).reduce(_ + _) / resps.length.toDouble)
   }
 
   def sampleBootPredictors(resp: Seq[Responses])(implicit rand: RandBasis = Rand) = {
