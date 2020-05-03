@@ -56,7 +56,7 @@ object Bootstrap {
   }
 
   def sampleBootPredictors(resp: NonEmptyVector[Responses])(implicit rand: RandBasis = Rand) = {
-    resp map (_ => resp.get(rand.randInt.sample()).get)
+    resp map (_ => resp.get(rand.randInt.sample() % resp.length).get)
   }
 
   def choose[T: ClassTag](elems: IndexedSeq[T])(indx: Array[Int]) = indx.map(_ % elems.size).map(elems)
