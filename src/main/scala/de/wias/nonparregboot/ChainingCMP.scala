@@ -23,12 +23,3 @@ object ChainingCMP {
 
   implicit def toBool[T: PartialOrder](cmp: ChainingCMP[T]): Boolean = cmp.maybeVal.isDefined
 }
-
-object test extends App {
-
-  import ChainingCMP._
-
-  println(implicitly[PartialOrder[Int]].getClass)
-  private val result: Boolean = 10.chain >= 2 <= 3
-  println(result)
-}
