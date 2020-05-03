@@ -42,8 +42,7 @@ object Bootstrap {
   }
 
   def getBounds(predsSorted: Seq[Seq[Double]], i: Int): (DV, DV) = {
-    (predsSorted.map(_(i)).toDV,
-      predsSorted.map(e => e(e.size - i - 1)).toDV)
+    (predsSorted.map(_(i)).toDV, predsSorted.map(e => e(e.size - i - 1)).toDV)
   }
 
   def chanceRejection(preds: Seq[Responses], lower: DV, upper: DV) = {
