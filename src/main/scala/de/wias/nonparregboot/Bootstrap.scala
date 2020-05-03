@@ -6,6 +6,7 @@ import de.wias.nonparregboot.KRR.{Covariates, Learner, Responses}
 import cats._
 import cats.data._
 import cats.implicits._
+import Averageble._
 
 import Function._
 import scala.reflect.ClassTag
@@ -29,7 +30,8 @@ object Bootstrap {
   }
 
   def confidenceIntevals(iters: Int, alpha: Double, el: EnsembleLearner, x: Covariates, y: Responses, t: Covariates) = {
-    val preds = boot(iters, el, x, y, t)
+    val ep = el(x, y)
+    val preds = boot(iters, ep, x, y, t)
     val predsSorted = preds.map(_.toArray).transpose.map(_.sorted)
     var i = -1
     var prob = 1d
@@ -38,7 +40,7 @@ object Bootstrap {
       val (l, u) = getBounds(predsSorted, i)
       prob = chanceRejection(preds, l, u)
     } while(prob > alpha)
-    getBounds(predsSorted, max(0, i - 1))
+    (ep, getBounds(predsSorted, max(0, i - 1)))
   }
 
   def getBounds(predsSorted: Seq[Seq[Double]], i: Int): (DV, DV) = {
@@ -49,8 +51,7 @@ object Bootstrap {
     preds.count(between(lower, _, upper)).toDouble / preds.size
   }
 
-  def boot(iter: Int, el: EnsembleLearner, x: Covariates, y: Responses, t: Covariates) = {
-    val ep = el(x, y)
+  def boot(iter: Int, ep: EnsemblePredictor, x: Covariates, y: Responses, t: Covariates) = {
     val resps = ep.map(_(t))
     (0 until iter).map(_ => Reducible[NonEmptyVector].reduce(sampleBootPredictors(resps)) / resps.length.toDouble)
   }

@@ -37,10 +37,6 @@ object KRR {
 
   def between(l: DV, m: DV, u: DV) = l < m && m < u
 
-  implicit val vecSemigroup = new Semigroup[DV] {
-    override def combine(x: DV, y: DV): DV = x + y
-  }
-
   implicit val applyIndSeq: Apply[IndexedSeq] = new Apply[IndexedSeq] {
     override def ap[A, B](ff: IndexedSeq[A => B])(fa: IndexedSeq[A]): IndexedSeq[B] = ff zip fa map { case(f, a) => f(a) }
 
