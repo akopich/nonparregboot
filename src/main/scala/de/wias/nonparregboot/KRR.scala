@@ -7,7 +7,7 @@ import cats.data._
 import cats.implicits._
 
 import Function._
-import toDV._
+import ToDV._
 
 object KRR {
   type DV = DenseVector[Double]

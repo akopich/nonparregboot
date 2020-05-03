@@ -9,7 +9,7 @@ import cats.implicits._
 
 object SampleDataset {
   import KRR._
-  import toDV._
+  import ToDV._
 
   def apply(n: Int, sigma2: Double, fstar: Double => Double): DataSampler = () =>  {
     val covariates = UniformOnCubeDistribution(1).sample(n)

@@ -15,7 +15,7 @@ case class Bootstrap[T](value: T)
 
 object Bootstrap {
   import KRR._
-  import toDV._
+  import ToDV._
 
   implicit val bootMonad = new Monad[Bootstrap] {
     override def flatMap[A, B](fa: Bootstrap[A])(f: A => Bootstrap[B]): Bootstrap[B] = f(fa.value)

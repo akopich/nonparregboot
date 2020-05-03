@@ -8,10 +8,10 @@ object BreezeCats {
 
 }
 
-class toDV(val d: Iterable[Double]) {
+class ToDV(val d: Iterable[Double]) {
   def toDV: DV = DenseVector(d.toArray)
 }
 
-object toDV {
-  implicit def to(d: Iterable[Double]): toDV = new toDV(d)
+object ToDV {
+  implicit def to(d: Iterable[Double]): ToDV = new ToDV(d)
 }
