@@ -1,11 +1,12 @@
 package de.wias.nonparregboot
 
-import breeze.linalg.{DenseVector, any}
+import breeze.linalg.{DenseVector, any, max}
 import breeze.stats.distributions.{Rand, RandBasis}
 import de.wias.nonparregboot.KRR.{Covariates, Learner, Responses}
 import cats._
 import cats.data._
 import cats.implicits._
+
 import Function._
 import scala.reflect.ClassTag
 
@@ -37,8 +38,7 @@ object Bootstrap {
       val (l, u) = getBounds(predsSorted, i)
       prob = chanceRejection(preds, l, u)
     } while(prob > alpha)
-    val (l, u) = (getBounds(predsSorted, i - 1) |+| getBounds(predsSorted, i-1))
-    (l/2d, u/2d)
+    getBounds(predsSorted, max(0, i - 1))
   }
 
   def getBounds(predsSorted: Seq[Seq[Double]], i: Int): (DV, DV) = {
