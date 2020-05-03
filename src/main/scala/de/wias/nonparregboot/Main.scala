@@ -11,13 +11,15 @@ import cats.implicits._
 import breeze.linalg._
 import breeze.numerics._
 import breeze.plot._
+import KRR._
+import ChainingCMP._
 
 object Main extends App {
   val sigma2 = 0.01
-  val n = 40000
+  val n = 20000
   val P = 400
   val s = 3d
-  val rho = 0.001 * math.pow(n, -2*s / (2*s + 1))
+  val rho = 0.001 * math.pow(n, -2 * s / (2 * s + 1))
 
   val ft = SuccessProbabilityEstimator(200) {
     val fstar = (x: Double) => sin(x * math.Pi * 2d)
@@ -25,7 +27,7 @@ object Main extends App {
     val (t, _, f) = SampleDataset(10, sigma2, fstar)()
     val el = KRR.fastKRR(P, rho, Matern52(1d))
     val (l, u) = Bootstrap.confidenceIntevals(5000, 0.95, el, x, y, t)
-    all(l <:< f) && all(f <:< u)
+    l.chain <= f <= u
   }
 
   println(ft)

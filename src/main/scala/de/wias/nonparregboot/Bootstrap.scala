@@ -1,6 +1,6 @@
 package de.wias.nonparregboot
 
-import breeze.linalg.{DenseVector, all, any}
+import breeze.linalg.{DenseVector, any}
 import breeze.stats.distributions.{Rand, RandBasis}
 import de.wias.nonparregboot.KRR.{Covariates, Learner, Responses}
 import cats._
@@ -9,10 +9,13 @@ import cats.implicits._
 import Function._
 import scala.reflect.ClassTag
 
+import ChainingCMP._
+
 case class Bootstrap[T](value: T)
 
 object Bootstrap {
   import KRR._
+  import toDV._
 
   implicit val bootMonad = new Monad[Bootstrap] {
     override def flatMap[A, B](fa: Bootstrap[A])(f: A => Bootstrap[B]): Bootstrap[B] = f(fa.value)
@@ -41,23 +44,23 @@ object Bootstrap {
   }
 
   def getBounds(predsSorted: Seq[Seq[Double]], i: Int): (DV, DV) = {
-    (DenseVector(predsSorted.map(_(i)).toArray),
-      DenseVector(predsSorted.map(e => e(e.size - i - 1)).toArray) )
+    (predsSorted.map(_(i)).toDV,
+      predsSorted.map(e => e(e.size - i - 1)).toDV)
   }
 
   def chanceRejection(preds: Seq[Responses], lower: DV, upper: DV) = {
-    preds.count(resp => all(lower <:< resp) && all(resp <:< upper)).toDouble / preds.size
+    preds.count(resp => lower.chain <= resp <= upper).toDouble / preds.size
   }
 
   def boot(iter: Int, el: EnsembleLearner, x: Covariates, y: Responses, t: Covariates) = {
     val ep = el(x, y)
     val resps = ep.map(_(t))
-    (0 until iter).map(_ => sampleBootPredictors(resps).value.reduce(_+_) / resps.length.toDouble)
+    (0 until iter).map(_ => resps.reduce(_ + _) / resps.length.toDouble)
   }
 
   def sampleBootPredictors(resp: Seq[Responses])(implicit rand: RandBasis = Rand) = {
     val indxs: Seq[Int] = rand.randInt.sample(resp.size).map(_ % resp.size)
-    indxs.map(resp).pure[Bootstrap]
+    indxs.map(resp)
   }
 
   def choose[T: ClassTag](elems: IndexedSeq[T])(indx: Array[Int]) = indx.map(_ % elems.size).map(elems)

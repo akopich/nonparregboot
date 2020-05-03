@@ -1,10 +1,13 @@
 package de.wias.nonparregboot
 
-import breeze.linalg.{DenseMatrix, DenseVector, cholesky}
+import breeze.linalg.{DenseMatrix, DenseVector, all, cholesky}
 import breeze.stats.distributions.MultivariateGaussian
-import cats.Apply
-import cats.kernel.Semigroup
+import cats._
+import cats.data._
+import cats.implicits._
+
 import Function._
+import toDV._
 
 object KRR {
   type DV = DenseVector[Double]
@@ -26,6 +29,10 @@ object KRR {
   type DataSampler = () => (Covariates, Responses, DV)
 
 
+  implicit val partialOrderDV = new PartialOrder[DV] {
+    override def partialCompare(x: DV, y: DV): Double = if (all(x <:< y)) -1d else if (all(x >:> y)) 1d else 0d
+  }
+
   implicit val vecSemigroup = new Semigroup[DV] {
     override def combine(x: DV, y: DV): DV = x + y
   }
@@ -41,7 +48,7 @@ object KRR {
   def fastKRR(P: Int, rho: Double, kernel: Kernel): EnsembleLearner = (x: Covariates, y: Responses) => {
     val chunkSize = x.size / P
     val learner = krr(rho, kernel)
-    (x.grouped(chunkSize) zip y.toArray.grouped(chunkSize).map(DenseVector.apply)).map(tupled(learner)).toVector
+    (x.grouped(chunkSize) zip y.toArray.grouped(chunkSize).map(_.toSeq.toDV)).map(tupled(learner)).toVector
   }
 
   def krr(rho: Double, kernel: Kernel): Learner = (X: Covariates, Y: Responses) => (Xstar: Covariates) => {
