@@ -52,12 +52,11 @@ object Bootstrap {
   def boot(iter: Int, el: EnsembleLearner, x: Covariates, y: Responses, t: Covariates) = {
     val ep = el(x, y)
     val resps = ep.map(_(t))
-    (0 until iter).map(_ => sampleBootPredictors(resps).reduce(_ + _) / resps.length.toDouble)
+    (0 until iter).map(_ => Reducible[NonEmptyVector].reduce(sampleBootPredictors(resps)) / resps.length.toDouble)
   }
 
-  def sampleBootPredictors(resp: Seq[Responses])(implicit rand: RandBasis = Rand) = {
-    val indxs: Seq[Int] = rand.randInt.sample(resp.size).map(_ % resp.size)
-    indxs.map(resp)
+  def sampleBootPredictors(resp: NonEmptyVector[Responses])(implicit rand: RandBasis = Rand) = {
+    resp map (_ => resp.get(rand.randInt.sample()).get)
   }
 
   def choose[T: ClassTag](elems: IndexedSeq[T])(indx: Array[Int]) = indx.map(_ % elems.size).map(elems)

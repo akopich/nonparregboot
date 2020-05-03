@@ -1,5 +1,7 @@
 package de.wias.nonparregboot
 
+import java.time.format.SignStyle
+
 import breeze.linalg.{DenseMatrix, DenseVector, all, cholesky}
 import breeze.stats.distributions.MultivariateGaussian
 import cats._
@@ -20,7 +22,7 @@ object KRR {
 
   type Predictor = Covariates => Responses
 
-  type EnsemblePredictor = Seq[Predictor]
+  type EnsemblePredictor = NonEmptyVector[Predictor]
 
   type Learner = (Covariates, Responses) => Predictor
 
@@ -50,7 +52,8 @@ object KRR {
   def fastKRR(P: Int, rho: Double, kernel: Kernel): EnsembleLearner = (x: Covariates, y: Responses) => {
     val chunkSize = x.size / P
     val learner = krr(rho, kernel)
-    (x.grouped(chunkSize) zip y.toArray.grouped(chunkSize).map(_.toSeq.toDV)).map(tupled(learner)).toVector
+    val head +: tail = (x.grouped(chunkSize) zip y.toArray.grouped(chunkSize).map(_.toSeq.toDV)).map(tupled(learner)).toVector
+    NonEmptyVector(head, tail)
   }
 
   def krr(rho: Double, kernel: Kernel): Learner = (X: Covariates, Y: Responses) => (Xstar: Covariates) => {
