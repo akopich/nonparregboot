@@ -56,7 +56,7 @@ object Main extends IOApp {
       val sampler = SampleDataset(0.01, (x: Double) => sin(x * math.Pi * 2d))
       val experimentConfig = ExperimentConfig(sampler, 20000, 10, 400, 3d, Matern52(1d), 5000, 200)
       val result: ExperimentResult = Experimentor(experimentConfig)
-      println(result)
+      println((experimentConfig, result).show)
     }
   }.as(ExitCode.Success)
 }
