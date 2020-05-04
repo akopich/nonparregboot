@@ -8,26 +8,12 @@ import cats.data._
 import cats.implicits._
 import Averageble._
 
-import Function._
+import KRR._
+import ToDV._
+
 import scala.reflect.ClassTag
 
-case class Bootstrap[T](value: T)
-
 object Bootstrap {
-  import KRR._
-  import ToDV._
-
-  implicit val bootMonad = new Monad[Bootstrap] {
-    override def flatMap[A, B](fa: Bootstrap[A])(f: A => Bootstrap[B]): Bootstrap[B] = f(fa.value)
-
-    @annotation.tailrec
-    override def tailRecM[A, B](a: A)(f: A => Bootstrap[Either[A, B]]): Bootstrap[B] = f(a) match {
-      case Bootstrap(Left(nextA)) => tailRecM(nextA)(f)
-      case Bootstrap(Right(b))    => new Bootstrap(b)
-    }
-
-    override def pure[A](x: A): Bootstrap[A] = new Bootstrap(x)
-  }
 
   def confidenceIntevals(iters: Int, alpha: Double, el: EnsembleLearner, x: Covariates, y: Responses, t: Covariates) = {
     val ep = el(x, y)

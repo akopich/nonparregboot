@@ -28,7 +28,7 @@ object KRR {
 
   type EnsembleLearner = (Covariates, Responses) => EnsemblePredictor
 
-  type DataSampler = () => (Covariates, Responses, DV)
+  type DataSampler = (Int) => (Covariates, Responses, DV)
 
 
   implicit val partialOrderDV = new PartialOrder[DV] {

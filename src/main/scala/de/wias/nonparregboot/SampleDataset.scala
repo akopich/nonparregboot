@@ -11,7 +11,7 @@ object SampleDataset {
   import KRR._
   import ToDV._
 
-  def apply(n: Int, sigma2: Double, fstar: Double => Double): DataSampler = () =>  {
+  def apply(sigma2: Double, fstar: Double => Double): DataSampler = (n: Int) =>  {
     val covariates = UniformOnCubeDistribution(1).sample(n)
     val noise = Gaussian(0, sqrt(sigma2)).sample(n).toDV
     val f = covariates.map(((x: DV) => x(0)) >>> fstar).toDV
