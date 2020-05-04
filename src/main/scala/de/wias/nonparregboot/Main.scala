@@ -8,6 +8,7 @@ import BreezeCats._
 import breeze.numerics.sin
 import cats._
 import cats.implicits._
+import cats.effect._
 import breeze.linalg._
 import breeze.numerics._
 import breeze.plot._
@@ -42,14 +43,20 @@ object Experimentor {
   }
 }
 
-object Main extends App {
+object Main extends IOApp {
+  implicit val showConf = new Show[(ExperimentConfig, ExperimentResult)] {
+    override def show(config2result: (ExperimentConfig, ExperimentResult)): String = config2result match {
+      case (ExperimentConfig(_, trainSize, targetSize, partitions, _, _, _, _), (rmse, coverage)) =>
+        s"n=$trainSize\tt=$targetSize\tP=$partitions\t\trmse=$rmse\tcoverage=$coverage"
+    }
+  }
 
-  println(BLAS.getInstance().getClass.getName)
-
-  val sampler = SampleDataset(0.01, (x: Double) => sin(x * math.Pi * 2d))
-  val experimentConfig = ExperimentConfig(sampler, 20000, 10, 400, 3d, Matern52(1d), 5000, 200)
-
-  val result: ExperimentResult = Experimentor(experimentConfig)
-
-  println(result)
+  override def run(args: List[String]): IO[ExitCode] = {
+    IO(println(BLAS.getInstance().getClass.getName)) *> IO {
+      val sampler = SampleDataset(0.01, (x: Double) => sin(x * math.Pi * 2d))
+      val experimentConfig = ExperimentConfig(sampler, 20000, 10, 400, 3d, Matern52(1d), 5000, 200)
+      val result: ExperimentResult = Experimentor(experimentConfig)
+      println(result)
+    }
+  }.as(ExitCode.Success)
 }
