@@ -4,5 +4,5 @@ import KRR._
 import breeze.linalg._
 
 object RMSE {
-  def apply(p: Predictor, x: Covariates, f: DV) = norm(p(x) - f)
+  def apply(p: Predictor, x: Covariates, f: DV) = math.pow(norm(p(x) - f), 2)
 }

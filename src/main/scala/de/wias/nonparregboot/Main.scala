@@ -47,7 +47,7 @@ object Experimentor {
 object Main extends IOApp {
   implicit val showConf: Show[(ExperimentConfig, (Double, Double))] = {
     case (ExperimentConfig(_, trainSize, targetSize, partitions, _, _, _, _), (rmse, coverage)) =>
-      s"n=$trainSize\tt=$targetSize\tP=$partitions\t\trmse=$rmse\tcoverage=$coverage"
+      s"n=$trainSize\tt=$targetSize\tP=$partitions\t\trmse=${math.sqrt(rmse)}\tcoverage=$coverage"
   }
 
   def runSignle(n: Int, P: Int, t: Int, bootIter: Int, avgIter: Int) = IO {
@@ -58,7 +58,7 @@ object Main extends IOApp {
   }
 
   override def run(args: List[String]): IO[ExitCode] = {
-    val ps :: ts :: Nil = List((7 to 10), (1 to 6)).map(_.map(math.pow(2, _).toInt))
+    val ps :: ts :: Nil = List((7 to 13), (1 to 9)).map(_.map(math.pow(2, _).toInt))
 
     val n = math.pow(2, 16).toInt
     val tasks = for (p <- ps; t <- ts) yield runSignle(n, p, t, 5000, 200)
