@@ -24,7 +24,7 @@ object Averageble {
   implicit def toWrapper[T: Averageble](x: T) = AvgWrapper(x)
 
   def average[T](a: NonEmptyVector[T])(implicit avg: Averageble[T]) =
-    Reducible[NonEmptyVector].reduce(a) |/| a.length
+    a.reduce |/| a.length
 
   implicit def intAverageble = new IntGroup with Averageble[Int]  {
     override def |/|(x: Int, cnt: Int): Int = x / cnt

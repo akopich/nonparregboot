@@ -15,6 +15,7 @@ import breeze.plot._
 import KRR._
 import com.github.fommil.netlib.BLAS
 import Averageble._
+import cats.data.NonEmptyList
 import de.wias.nonparregboot.Experimentor.ExperimentResult
 
 case class ExperimentConfig(sampler: DataSampler,
@@ -44,19 +45,26 @@ object Experimentor {
 }
 
 object Main extends IOApp {
-  implicit val showConf = new Show[(ExperimentConfig, ExperimentResult)] {
-    override def show(config2result: (ExperimentConfig, ExperimentResult)): String = config2result match {
-      case (ExperimentConfig(_, trainSize, targetSize, partitions, _, _, _, _), (rmse, coverage)) =>
-        s"n=$trainSize\tt=$targetSize\tP=$partitions\t\trmse=$rmse\tcoverage=$coverage"
-    }
+  implicit val showConf: Show[(ExperimentConfig, (Double, Double))] = {
+    case (ExperimentConfig(_, trainSize, targetSize, partitions, _, _, _, _), (rmse, coverage)) =>
+      s"n=$trainSize\tt=$targetSize\tP=$partitions\t\trmse=$rmse\tcoverage=$coverage"
+  }
+
+  def runSignle(n: Int, P: Int, t: Int, bootIter: Int, avgIter: Int) = IO {
+    val sampler = SampleDataset(0.01, x => sin(x * math.Pi * 2d))
+    val experimentConfig = ExperimentConfig(sampler, n, t, P, 3d, Matern52(1d), bootIter, avgIter)
+    val result: ExperimentResult = Experimentor(experimentConfig)
+    println((experimentConfig, result).show)
   }
 
   override def run(args: List[String]): IO[ExitCode] = {
-    IO(println(BLAS.getInstance().getClass.getName)) *> IO {
-      val sampler = SampleDataset(0.01, (x: Double) => sin(x * math.Pi * 2d))
-      val experimentConfig = ExperimentConfig(sampler, 20000, 10, 400, 3d, Matern52(1d), 5000, 200)
-      val result: ExperimentResult = Experimentor(experimentConfig)
-      println((experimentConfig, result).show)
-    }
+    val ps :: ts :: Nil = List((7 to 10), (1 to 6)).map(_.map(math.pow(2, _).toInt))
+
+    val n = math.pow(2, 16).toInt
+    val tasks = for (p <- ps; t <- ts) yield runSignle(n, p, t, 5000, 200)
+
+    NonEmptyList(IO {
+      println(BLAS.getInstance().getClass.getName)
+    }, tasks.toList).reduce
   }.as(ExitCode.Success)
 }
