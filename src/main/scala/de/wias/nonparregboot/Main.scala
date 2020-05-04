@@ -39,7 +39,7 @@ object Experimentor {
         val (t, _, ft) = sampler(targetSize)
         val el = KRR.fastKRR(partitions, rho, kernel)
         val (ep, (l, u)) = Bootstrap.confidenceIntevals(bootIter, 0.95, el, x, y, t)
-        (RMSE(average(ep), t, ft), if (between(l, ft, u)) 1d else 0d)
+        (MSE(average(ep), t, ft), if (between(l, ft, u)) 1d else 0d)
       }
   }
 }
