@@ -15,9 +15,9 @@ import scala.reflect.ClassTag
 
 object Bootstrap {
 
-  def confidenceIntevals(iters: Int, alpha: Double, el: EnsembleLearner, x: Covariates, y: Responses, t: Covariates) = {
+  def predictWithConfidence(iters: Int, alpha: Double, el: EnsembleLearner, x: Covariates, y: Responses, t: Covariates) = {
     val ep = el(x, y)
-    val preds = boot(iters, ep, x, y, t)
+    val (fhat, preds) = boot(iters, ep, t)
     val predsSorted = preds.map(_.toArray).transpose.map(_.sorted)
     var i = -1
     var prob = 1d
@@ -26,7 +26,8 @@ object Bootstrap {
       val (l, u) = getBounds(predsSorted, i)
       prob = chanceRejection(preds, l, u)
     } while(prob > alpha)
-    (ep, getBounds(predsSorted, max(0, i - 1)))
+    val (u, l) = getBounds(predsSorted, max(0, i - 1))
+    (fhat, (u, l))
   }
 
   def getBounds(predsSorted: Seq[Seq[Double]], i: Int): (DV, DV) = {
@@ -37,9 +38,9 @@ object Bootstrap {
     preds.count(between(lower, _, upper)).toDouble / preds.size
   }
 
-  def boot(iter: Int, ep: EnsemblePredictor, x: Covariates, y: Responses, t: Covariates) = {
+  def boot(iter: Int, ep: EnsemblePredictor, t: Covariates) = {
     val resps = ep.map(_(t))
-    (0 until iter).map(_ => Reducible[NonEmptyVector].reduce(sampleBootPredictors(resps)) / resps.length.toDouble)
+    (average(resps), (0 until iter).map(_ => average(sampleBootPredictors(resps))) )
   }
 
   def sampleBootPredictors(resp: NonEmptyVector[Responses])(implicit rand: RandBasis = Rand) = {

@@ -15,6 +15,7 @@ import breeze.plot._
 import KRR._
 import com.github.fommil.netlib.BLAS
 import Averageble._
+import Bootstrap._
 import cats.data.NonEmptyList
 import de.wias.nonparregboot.Experimentor.ExperimentResult
 
@@ -38,8 +39,8 @@ object Experimentor {
         val (x, y, _) = sampler(trainSize)
         val (t, _, ft) = sampler(targetSize)
         val el = KRR.fastKRR(partitions, rho, kernel)
-        val (ep, (l, u)) = Bootstrap.confidenceIntevals(bootIter, 0.95, el, x, y, t)
-        (MSE(average(ep), t, ft), if (between(l, ft, u)) 1d else 0d)
+        val (that, (l, u)) = predictWithConfidence(bootIter, 0.95, el, x, y, t)
+        (MSE(that, ft), if (between(l, ft, u)) 1d else 0d)
       }
   }
 }

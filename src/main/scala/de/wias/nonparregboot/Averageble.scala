@@ -23,7 +23,7 @@ case class AvgWrapper[T:Averageble](value: T) {
 object Averageble {
   implicit def toWrapper[T: Averageble](x: T) = AvgWrapper(x)
 
-  def average[T](a: NonEmptyVector[T])(implicit avg: Averageble[T]) =
+  def average[T: Averageble](a: NonEmptyVector[T]) =
     a.reduce |/| a.length
 
   implicit def intAverageble = new IntGroup with Averageble[Int]  {
