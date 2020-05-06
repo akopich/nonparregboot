@@ -52,14 +52,14 @@ object Main extends IOApp {
   }
 
   def runSignle(n: Int, P: Int, t: Int, bootIter: Int, avgIter: Int) = IO {
-    val sampler = SampleDataset(0.01, x => sin(x * math.Pi * 2d))
+    val sampler = SampleDataset(1d, x => sin(x * math.Pi * 2d))
     val experimentConfig = ExperimentConfig(sampler, n, t, P, 3d, Matern52(1d), bootIter, avgIter)
     val result: ExperimentResult = Experimentor(experimentConfig)
     println((experimentConfig, result).show)
   }
 
   override def run(args: List[String]): IO[ExitCode] = {
-    val ps :: ts :: Nil = List((7 to 13), (1 to 9)).map(_.map(math.pow(2, _).toInt))
+    val ps :: ts :: Nil = List(7 to 12, 1 to 9).map(_.map(math.pow(2, _).toInt))
 
     val n = math.pow(2, 16).toInt
     val tasks = for (p <- ps; t <- ts) yield runSignle(n, p, t, 5000, 200)
