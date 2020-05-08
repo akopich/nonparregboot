@@ -4,7 +4,6 @@ import cats._
 import cats.data._
 import cats.implicits._
 import cats.kernel.instances.IntGroup
-import KRR._
 
 trait Averageble[T] extends Semigroup[T] { self =>
   def |/|(x:T, cnt: Int): T

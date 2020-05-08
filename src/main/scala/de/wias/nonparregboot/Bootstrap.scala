@@ -2,13 +2,11 @@ package de.wias.nonparregboot
 
 import breeze.linalg.{DenseVector, any, max}
 import breeze.stats.distributions.{Rand, RandBasis}
-import de.wias.nonparregboot.KRR.{Covariates, Learner, Responses}
 import cats._
 import cats.data._
 import cats.implicits._
 import Averageble._
 
-import KRR._
 import ToDV._
 
 import scala.reflect.ClassTag

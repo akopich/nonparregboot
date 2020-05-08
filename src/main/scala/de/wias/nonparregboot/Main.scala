@@ -1,18 +1,9 @@
 package de.wias.nonparregboot
 
-
-import breeze.linalg._
-import breeze.stats.distributions.MultivariateGaussian
-import smile.math.kernel.MercerKernel
-import BreezeCats._
 import breeze.numerics.sin
 import cats._
 import cats.implicits._
 import cats.effect._
-import breeze.linalg._
-import breeze.numerics._
-import breeze.plot._
-import KRR._
 import com.github.fommil.netlib.BLAS
 import Averageble._
 import Bootstrap._

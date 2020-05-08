@@ -1,6 +1,5 @@
 package de.wias.nonparregboot
 
-import KRR._
 import breeze.linalg._
 
 object MSE {

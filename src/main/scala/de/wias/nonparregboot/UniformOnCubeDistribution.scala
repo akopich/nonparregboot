@@ -1,8 +1,7 @@
 package de.wias.nonparregboot
 
-import breeze.linalg.{DenseMatrix, DenseVector, any}
-import breeze.stats.distributions.{ContinuousDistr, Moments, Rand, RandBasis}
-import KRR._
+import breeze.linalg.{DenseVector, any}
+import breeze.stats.distributions.{ContinuousDistr, Rand, RandBasis}
 import breeze.numerics.{log, logI}
 
 case class UniformOnCubeDistribution(dim : Int)(implicit rand: RandBasis = Rand)  extends ContinuousDistr[DV] {
