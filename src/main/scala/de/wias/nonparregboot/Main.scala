@@ -50,7 +50,7 @@ object Main extends IOApp {
   }
 
   override def run(args: List[String]): IO[ExitCode] = {
-    val ps :: ts :: Nil = List(12 to 12, 14 to 18).map(_.map(math.pow(2, _).toInt))
+    val ps :: ts :: Nil = List(7 to 12, 2 to 13).map(_.map(math.pow(2, _).toInt))
 
     val n = math.pow(2, 16).toInt
     val tasks = for (p <- ps; t <- ts) yield runSignle(n, p, t, 5000, 200)

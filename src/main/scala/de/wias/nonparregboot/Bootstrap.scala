@@ -9,13 +9,13 @@ import Averageble._
 
 import ToDV._
 
-import scala.reflect.ClassTag
-
 object Bootstrap {
 
   def predictWithConfidence(iters: Int, alpha: Double, el: EnsembleLearner, x: Covariates, y: Responses, t: Covariates) = {
-    val ep = el(x, y)
-    val (fhat, preds) = boot(iters, ep, t)
+    val resps = el(x, y).map(_(t))
+    println("PREDICTED!")
+    val fhat = average(resps)
+    val preds = boot(iters, resps)
     val predsSorted = preds.map(_.toArray).transpose.map(_.sorted)
     var i = -1
     var prob = 1d
@@ -36,14 +36,11 @@ object Bootstrap {
     preds.count(between(lower, _, upper)).toDouble / preds.size
   }
 
-  def boot(iter: Int, ep: EnsemblePredictor, t: Covariates) = {
-    val resps = ep.map(_(t))
-    (average(resps), (0 until iter).map(_ => average(sampleBootPredictors(resps))) )
+  def boot(iter: Int, resps : NonEmptyVector[Responses]) = {
+    0 until iter map(_ => sampleBootPredictors(resps))
   }
 
   def sampleBootPredictors(resp: NonEmptyVector[Responses])(implicit rand: RandBasis = Rand) = {
-    resp map (_ => resp.get(rand.randInt.sample() % resp.length).get)
+    average(resp map (_ => resp.get(rand.randInt.sample() % resp.length).get))
   }
-
-  def choose[T: ClassTag](elems: IndexedSeq[T])(indx: Array[Int]) = indx.map(_ % elems.size).map(elems)
 }

@@ -1,8 +1,6 @@
 package de.wias.nonparregboot
 
-import breeze.linalg.functions.euclideanDistance
 import breeze.linalg._
-import breeze._
 import breeze.numerics.{exp, sqrt}
 
 object Matern52 {
