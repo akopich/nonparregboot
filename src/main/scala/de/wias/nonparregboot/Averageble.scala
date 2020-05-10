@@ -15,12 +15,11 @@ trait Averageble[T] extends Semigroup[T] { self =>
   }
 }
 
-case class AvgWrapper[T:Averageble](value: T) {
-  def |/|(cnt: Int): T = implicitly[Averageble[T]].|/|(value, cnt)
-}
-
 object Averageble {
-  implicit def toWrapper[T: Averageble](x: T) = AvgWrapper(x)
+  implicit class AvgWrapper[T:Averageble](value: T) {
+    def |/|(cnt: Int): T = implicitly[Averageble[T]].|/|(value, cnt)
+  }
+
 
   def average[T: Averageble](a: NonEmptyVector[T]) =
     a.reduce |/| a.length
