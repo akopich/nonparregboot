@@ -4,7 +4,9 @@ version := "0.1"
 
 scalaVersion := "2.13.2"
 
-scalacOptions ++= Seq("-feature")
+scalacOptions ++= Seq("-deprecation", "-feature")
+
+addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1")
 
 libraryDependencies += "org.typelevel" %% "cats-core" % "2.1.1"
 

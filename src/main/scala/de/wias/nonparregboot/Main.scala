@@ -7,6 +7,7 @@ import cats.effect._
 import com.github.fommil.netlib.BLAS
 import Averageble._
 import Bootstrap._
+import breeze.stats.distributions.{Gaussian, Uniform}
 import cats.data.NonEmptyList
 import de.wias.nonparregboot.Experimentor.ExperimentResult
 
@@ -20,8 +21,7 @@ case class ExperimentConfig(sampler: DataSampler,
 object Experimentor {
   type ExperimentResult = (Double, Double)
 
-  implicit val tupleAvg: Averageble[ExperimentResult] = implicitly[Averageble[Double]]
-    .compose(implicitly[Averageble[Double]])
+  implicit def tupleAvg(implicit avg: Averageble[Double]): Averageble[ExperimentResult] = avg.compose(avg)
 
   def apply(config: ExperimentConfig): ExperimentResult = config match {
     case ExperimentConfig(sampler, trainSize, targetSize, partitions, s, kernel, bootIter, experIter) =>
@@ -43,7 +43,9 @@ object Main extends IOApp {
   }
 
   def runSignle(n: Int, P: Int, t: Int, bootIter: Int, avgIter: Int) = IO {
-    val sampler = SampleDataset(1d, x => sin(x * math.Pi * 2d))
+    val xGen     = () => Uniform(0d, 1d).sample()
+    val noiseGen = () => Gaussian(0d, 1d).sample()
+    val sampler = SampleDataset(xGen, noiseGen, x => sin(x * math.Pi * 2d))
     val experimentConfig = ExperimentConfig(sampler, n, t, P, 3d, Matern52(1d), bootIter, avgIter)
     val result: ExperimentResult = Experimentor(experimentConfig)
     println((experimentConfig, result).show)

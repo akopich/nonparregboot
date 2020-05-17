@@ -17,6 +17,8 @@ package object nonparregboot {
 
   type Responses = DV
 
+  type FStarValues = DV
+
   type Predictor = Covariates => Responses
 
   type EnsemblePredictor = NonEmptyVector[Predictor]
@@ -25,7 +27,7 @@ package object nonparregboot {
 
   type EnsembleLearner = (Covariates, Responses) => EnsemblePredictor
 
-  type DataSampler = (Int) => (Covariates, Responses, DV)
+  type DataSampler = (Int) => (Covariates, Responses, FStarValues)
 
   implicit val partialOrderDV: PartialOrder[DV] =
     (x: DV, y: DV) => if (all(x <:< y)) -1d else

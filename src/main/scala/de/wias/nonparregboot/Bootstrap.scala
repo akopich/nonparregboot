@@ -13,7 +13,6 @@ object Bootstrap {
 
   def predictWithConfidence(iters: Int, alpha: Double, el: EnsembleLearner, x: Covariates, y: Responses, t: Covariates) = {
     val resps = el(x, y).map(_(t))
-    println("PREDICTED!")
     val fhat = average(resps)
     val preds = boot(iters, resps)
     val predsSorted = preds.map(_.toArray).transpose.map(_.sorted)

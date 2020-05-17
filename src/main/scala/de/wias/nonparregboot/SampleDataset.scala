@@ -8,14 +8,20 @@ import cats.data._
 import cats.implicits._
 
 import ToDV._
+import Times._
 
 object SampleDataset {
+  def apply(xGen: () => Double,
+            noiseGen: () => Double,
+            fstar: Double => Double): DataSampler = (n: Int) =>  {
+    val (covariates, responses, fs) = n.times {
+      val x = xGen()
+      val eps = noiseGen()
+      val f = fstar(x)
+      val y = f + eps
+      (x.toDV, y, f)
+    }.unzip3
 
-  def apply(sigma2: Double, fstar: Double => Double): DataSampler = (n: Int) =>  {
-    val covariates = UniformOnCubeDistribution(1).sample(n)
-    val noise = Gaussian(0, sqrt(sigma2)).sample(n).toDV
-    val f = covariates.map(((x: DV) => x(0)) >>> fstar).toDV
-    val responses: Responses = f + noise
-    (covariates, responses, f)
+    (covariates, responses.toDV, fs.toDV)
   }
 }
