@@ -11,10 +11,15 @@ import ToDV._
 import KRR._
 import de.wias.nonparregboot.Bootstrap.predictWithConfidence
 import de.wias.nonparregboot.Plot.{covToDV, targets}
+import eu.timepit.refined.numeric.Positive
 import org.apache.commons.math3.random.MersenneTwister
+import eu.timepit.refined._
+import eu.timepit.refined.api.Refined
+import eu.timepit.refined.auto._
+import eu.timepit.refined.numeric._
 
 object Plot extends App {
-  def covToDV(xs: Covariates) = xs.map(_(0)).toDV
+  def covToDV(xs: Covariates) = xs.map(_(0)).toVector.toDV
 
   implicit val randBasis: RandBasis = new RandBasis(new ThreadLocalRandomGenerator(new MersenneTwister(42069)))
 
@@ -25,13 +30,13 @@ object Plot extends App {
   val noiseGen = () => Gaussian(0d, 1d).sample()
   val fstar: Double => Double = x => sin(x * math.Pi * 2d)
   val sampler = SampleDataset(xGen, noiseGen, fstar)
-  val n = 2048
-  val P = 32
+  val n: IRP = refineMV[Positive](2048)
+  val P: IRP = 32
   val (xs, ys, fs) = sampler(n)
-  val targets : Covariates = linspace(0d, 1d, length = 10).valuesIterator.map(_.toDV).toVector
+  val targets : Covariates = toNEV(linspace(0d, 1d, length = 10).valuesIterator.map(_.toDV).toVector)
 
   val s = 3d
-  val rho = 0.001 * math.pow(n, -2 * s / (2 * s + 1))
+  val rho = 0.001 * math.pow(n.value, -2 * s / (2 * s + 1))
   val el = fastKRR(P, rho, Matern52(1d))
   val (fhat, (l, u)) : (DV, (DV, DV)) = predictWithConfidence(5000, 0.95, el, xs, ys, targets)
 
