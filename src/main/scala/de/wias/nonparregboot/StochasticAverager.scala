@@ -1,12 +1,14 @@
 package de.wias.nonparregboot
 
-import scala.collection.parallel.CollectionConverters._
 import Averageble._
+import Times._
 import cats.data.NonEmptyVector
 
+import scala.reflect.ClassTag
+
 object StochasticAverager {
-  def apply[T: Averageble](iter: Int)(fun: => T) : T = {
-    val head +: tail = (0 until iter).par.map(_ => fun).seq
+  def apply[T: Averageble: ClassTag](iter: Int)(fun: => T) : T = {
+    val head +: tail = 0 parTimes fun
 
     average(NonEmptyVector(head, tail.toVector))
   }

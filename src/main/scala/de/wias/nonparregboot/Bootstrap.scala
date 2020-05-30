@@ -6,13 +6,17 @@ import cats._
 import cats.data._
 import cats.implicits._
 import Averageble._
+import Times._
 
 import ToDV._
 
 object Bootstrap {
-
-  def predictWithConfidence(iters: Int, alpha: Double, el: EnsembleLearner, x: Covariates, y: Responses, t: Covariates) = {
-    val resps = el(x, y).map(_(t))
+  def predictWithConfidence(iters: Int,
+                            alpha: Double,
+                            el: EnsembleLearner,
+                            x: Covariates, y: Responses,
+                            t: Covariates): (Responses, (DV, DV)) = {
+    val resps = el(x, y) map (_(t))
     val fhat = average(resps)
     val preds = boot(iters, resps)
     val predsSorted = preds.map(_.toArray).transpose.map(_.sorted)
@@ -36,7 +40,7 @@ object Bootstrap {
   }
 
   def boot(iter: Int, resps : NonEmptyVector[Responses]) = {
-    0 until iter map(_ => sampleBootPredictors(resps))
+    iter times sampleBootPredictors(resps)
   }
 
   def sampleBootPredictors(resp: NonEmptyVector[Responses])(implicit rand: RandBasis = Rand) = {

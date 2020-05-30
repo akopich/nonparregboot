@@ -4,7 +4,7 @@ version := "0.1"
 
 scalaVersion := "2.13.2"
 
-scalacOptions ++= Seq("-deprecation", "-feature")
+scalacOptions ++= Seq("-deprecation", "-feature", "-language:postfixOps")
 
 addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1")
 
