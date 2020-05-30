@@ -44,3 +44,9 @@ libraryDependencies  ++= Seq(
 libraryDependencies += "com.github.haifengl" %% "smile-scala" % "2.4.0"
 
 libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" % "0.2.0"
+
+libraryDependencies ++= Seq(
+  "eu.timepit" %% "refined"                 % "0.9.14",
+  "eu.timepit" %% "refined-cats"            % "0.9.14",
+  "eu.timepit" %% "refined-eval"            % "0.9.14",
+)
