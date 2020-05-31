@@ -51,4 +51,6 @@ package object nonparregboot {
   }
 
   implicit def unwrapIntP(positive: IntP) : Int = positive.value
+
+  def add(a: IntP, b: IntP) = a + b
 }

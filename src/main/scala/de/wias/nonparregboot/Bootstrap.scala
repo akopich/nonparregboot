@@ -21,10 +21,8 @@ import NEV._
 object Bootstrap {
   def predictWithBall(iters: IntP,
                       alpha: Double,
-                      el: EnsembleLearner,
-                      x: Covariates, y: Responses,
+                      ep: EnsemblePredictor,
                       t: Covariates): (Responses, Double) = {
-    val ep = el(x, y)
     val responses = ensemblePredict(ep, t)
     val fhat = average(responses)
     val distances = boot(iters, responses).map(squaredDistance(_, fhat))
@@ -34,10 +32,9 @@ object Bootstrap {
 
   def predictWithConfidence(iters: IntP,
                             alpha: Double,
-                            el: EnsembleLearner,
-                            x: Covariates, y: Responses,
+                            ep: EnsemblePredictor,
                             t: Covariates): (Responses, (DV, DV)) = {
-    val resps = ensemblePredict(el(x, y), t)
+    val resps = ensemblePredict(ep, t)
     val fhat = average(resps)
     val preds = boot(iters, resps)
     val predsSorted = preds.map(_.toArray).toVector.transpose.map(_.sorted)

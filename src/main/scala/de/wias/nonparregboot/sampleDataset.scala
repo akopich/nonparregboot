@@ -13,7 +13,7 @@ import eu.timepit.refined.numeric.Positive
 import NEV._
 
 
-object SampleDataset {
+object sampleDataset {
   def apply(xGen: () => Double,
             noiseGen: () => Double,
             fstar: Double => Double): DataSampler = (n: IntP) =>  {

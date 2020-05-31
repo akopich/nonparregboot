@@ -31,7 +31,7 @@ object Plot extends App {
   }
   val noiseGen = () => Gaussian(0d, 1d).sample()
   val fstar: Double => Double = x => sin(x * math.Pi * 2d)
-  val sampler = SampleDataset(xGen, noiseGen, fstar)
+  val sampler = sampleDataset(xGen, noiseGen, fstar)
   val n: IntP = refineMV[Positive](2048)
   val P: IntP = 32
   val (xs, ys, fs) = sampler(n)
@@ -40,14 +40,14 @@ object Plot extends App {
   val s = 3d
   val rho = 0.001 * math.pow(n.toDouble, -2 * s / (2 * s + 1))
   val el = fastKRR(P, rho, Matern52(1d))
-  val (fhat, (l, u)) : (DV, (DV, DV)) = predictWithConfidence(5000, 0.95, el, xs, ys, targets)
+  val (fhat, (l, u)) : (DV, (DV, DV)) = predictWithConfidence(5000, 0.95, el(xs, ys), targets)
 
   val figure = Figure()
   val p = figure.subplot(0)
 
 
   p += plot(linspace(0d, 1d), linspace(0d, 1d).map(fstar), colorcode = "blue")
-  p+= scatter(DenseVector(-0.05, 1.05), DenseVector(0d, 0d), _ => 0d, colors = _ => Color.RED)
+  p += scatter(DenseVector(-0.05, 1.05), DenseVector(0d, 0d), _ => 0d, colors = _ => Color.RED)
   p += scatter(covToDV(targets), fhat, _ => 0.01, colors = _ => Color.RED)
 
   for (((t, l), u) <- covToDV(targets).toArray.zip(l.toArray).zip(u.toArray)) {
