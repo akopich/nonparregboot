@@ -10,6 +10,8 @@ import ToDV._
 import Times._
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.numeric.Positive
+import NEV._
+
 
 object SampleDataset {
   def apply(xGen: () => Double,

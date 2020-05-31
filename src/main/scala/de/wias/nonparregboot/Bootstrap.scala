@@ -16,13 +16,14 @@ import eu.timepit.refined.numeric._
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.numeric.Positive
 import org.apache.commons.math3.stat.descriptive.rank.Percentile
+import NEV._
 
 object Bootstrap {
   def predictWithBall(iters: IntP,
                       alpha: Double,
                       el: EnsembleLearner,
                       x: Covariates, y: Responses,
-                      t: Covariates) = {
+                      t: Covariates): (Responses, Double) = {
     val ep = el(x, y)
     val responses = ensemblePredict(ep, t)
     val fhat = average(responses)

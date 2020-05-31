@@ -8,6 +8,7 @@ import eu.timepit.refined.numeric.Positive
 
 import scala.reflect.ClassTag
 import scala.collection.parallel.CollectionConverters._
+import NEV._
 
 
 object Times {

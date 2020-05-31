@@ -17,6 +17,8 @@ import eu.timepit.refined._
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.auto._
 import eu.timepit.refined.numeric._
+import NEV._
+
 
 object Plot extends App {
   def covToDV(xs: Covariates) = xs.map(_(0)).toVector.toDV
