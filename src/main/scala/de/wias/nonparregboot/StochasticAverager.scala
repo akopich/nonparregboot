@@ -7,5 +7,5 @@ import cats.data.NonEmptyVector
 import scala.reflect.ClassTag
 
 object StochasticAverager {
-  def apply[T: Averageble: ClassTag](iter: IRP)(fun: => T) : T = average(iter parTimes fun)
+  def apply[T: Averageble: ClassTag](iter: IntP)(fun: => T) : T = average(iter parTimes fun)
 }

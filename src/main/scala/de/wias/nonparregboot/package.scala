@@ -11,7 +11,7 @@ import eu.timepit.refined.numeric.Positive
 import eu.timepit.refined.refineV
 
 package object nonparregboot {
-  type IRP = Int Refined Positive
+  type IntP = Int Refined Positive
 
   type NEV[A] = NonEmptyVector[A]
 
@@ -33,7 +33,7 @@ package object nonparregboot {
 
   type EnsembleLearner = (Covariates, Responses) => EnsemblePredictor
 
-  type DataSampler = IRP => (Covariates, Responses, FStarValues)
+  type DataSampler = IntP => (Covariates, Responses, FStarValues)
 
   implicit val partialOrderDV: PartialOrder[DV] =
     (x: DV, y: DV) => if (all(x <:< y)) -1d else
@@ -42,9 +42,9 @@ package object nonparregboot {
 
   def between(l: DV, m: DV, u: DV) = l < m && m < u
 
-  def ensemblePredict(ep: EnsemblePredictor, x: Covariates) = ep.map(_(x))
+  def ensemblePredict(ep: EnsemblePredictor, x: Covariates): NEV[Responses] = ep.map(_(x))
 
-  def size[A](as : NonEmptyVector[A]): IRP = refineV[Positive](as.size.toInt) match {
+  def size[A](as : NonEmptyVector[A]): IntP = refineV[Positive](as.size.toInt) match {
     case Right(size) => size
     case _ => throw new ArithmeticException("Size of a non-empty vector is not positive. I should have never been thrown")
   }
@@ -53,12 +53,25 @@ package object nonparregboot {
     case head +: tail => NonEmptyVector(head, tail.toVector)
   }
 
-  def group[T](ts: NEV[T], size: IRP): NEV[NEV[T]] = toNEV(ts.toVector.grouped(size.value).map(toNEV).toSeq)
+  def group[T](ts: NEV[T], size: IntP): NEV[NEV[T]] = toNEV(ts.toVector.grouped(size.value).map(toNEV).toSeq)
 
-  def toIRP(i: Int): IRP = refineV[Positive](i) match {
+  def toIRP(i: Int): IntP = refineV[Positive](i) match {
     case Right(size) => size
     case _ => throw new ArithmeticException("I should have never been thrown")
   }
 
   def NEV[A](a: A): NEV[A] = NonEmptyVector(a, Vector())
+
+  def unzip3[A, B, C](abcs: NonEmptyVector[(A, B, C)]): (NEV[A], NEV[B], NEV[C]) = abcs match {
+    case NonEmptyVector((a, b, c), tail) =>
+      val (as, bs, cs) = tail.unzip3
+      (NonEmptyVector(a, as), NonEmptyVector(b, bs), NonEmptyVector(c, cs))
+  }
+
+  def unzip[A, B](abcs: NonEmptyVector[(A, B)]): (NEV[A], NEV[B]) = abcs match {
+    case NonEmptyVector((a, b), tail) =>
+      val (as, bs) = tail.unzip
+      (NonEmptyVector(a, as), NonEmptyVector(b, bs))
+  }
+
 }

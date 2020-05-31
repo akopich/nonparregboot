@@ -11,7 +11,7 @@ import scala.collection.parallel.CollectionConverters._
 
 
 object Times {
-  implicit class TimesWrapper(val i : IRP) {
+  implicit class TimesWrapper(val i : IntP) {
     def times[T: ClassTag](f:  => T): NEV[T] = toNEV ((0 until i.value) map (_ => f) )
 
     def parTimes[T: ClassTag](f:  => T): NEV[T] = toNEV ( (0 until i.value).par map (_ => f) seq )

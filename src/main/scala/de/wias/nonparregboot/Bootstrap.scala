@@ -1,6 +1,7 @@
 package de.wias.nonparregboot
 
-import breeze.linalg.{DenseVector, any, max}
+import breeze.linalg._
+import breeze.numerics._
 import breeze.stats.distributions.{Rand, RandBasis}
 import cats._
 import cats.data._
@@ -14,20 +15,28 @@ import eu.timepit.refined.auto._
 import eu.timepit.refined.numeric._
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.numeric.Positive
+import org.apache.commons.math3.stat.descriptive.rank.Percentile
 
 object Bootstrap {
-  def predictWithBall(iters: Int, alpha: Double, el: EnsembleLearner, x: Covariates, y: Responses) = {
-    el(x, y).map {predictor =>
-
-    }
+  def predictWithBall(iters: IntP,
+                      alpha: Double,
+                      el: EnsembleLearner,
+                      x: Covariates, y: Responses,
+                      t: Covariates) = {
+    val ep = el(x, y)
+    val responses = ensemblePredict(ep, t)
+    val fhat = average(responses)
+    val distances = boot(iters, responses).map(squaredDistance(_, fhat))
+    val quantile = new Percentile().evaluate(distances.toVector.toArray, alpha * 100)
+    (fhat, quantile / size(t))
   }
 
-  def predictWithConfidence(iters: IRP,
+  def predictWithConfidence(iters: IntP,
                             alpha: Double,
                             el: EnsembleLearner,
                             x: Covariates, y: Responses,
                             t: Covariates): (Responses, (DV, DV)) = {
-    val resps = el(x, y) map (_(t))
+    val resps = ensemblePredict(el(x, y), t)
     val fhat = average(resps)
     val preds = boot(iters, resps)
     val predsSorted = preds.map(_.toArray).toVector.transpose.map(_.sorted)
@@ -50,17 +59,15 @@ object Bootstrap {
     preds.count(between(lower, _, upper)).toDouble / preds.size
   }
 
-  def boot(iter: IRP, resps : NonEmptyVector[Responses]) = {
+  def boot(iter: IntP, resps : NonEmptyVector[Responses]) = {
     iter times sampleBootPredictors(resps)
   }
 
-  def rand[A](as: NonEmptyVector[A])(implicit randbasis: RandBasis = Rand) =
-    as.toVector(randbasis.randInt.sample() % size(as))
+  def rand[A](as: NonEmptyVector[A]): A = as.toVector(rand(size(as)))
 
+  def rand(i: Int)(implicit randbasis: RandBasis = Rand): Int = randbasis.randInt.sample() % i
 
-  def sampleBootPredictors(resp: NonEmptyVector[Responses])(implicit randbasis: RandBasis = Rand) = {
-    average(size(resp) times rand(resp))
-  }
+  def sampleBootPredictors(resp: NonEmptyVector[Responses]): Responses = average(size(resp) times rand(resp))
 
-  def subsample(size: Int, x: Covariates, y: Responses)(implicit randbasis: RandBasis = Rand): (Covariates, Responses) = ???
+  def subsample(length: IntP, x: Covariates) : Covariates = length times rand(x)
 }

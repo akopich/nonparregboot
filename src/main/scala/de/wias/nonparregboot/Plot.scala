@@ -30,8 +30,8 @@ object Plot extends App {
   val noiseGen = () => Gaussian(0d, 1d).sample()
   val fstar: Double => Double = x => sin(x * math.Pi * 2d)
   val sampler = SampleDataset(xGen, noiseGen, fstar)
-  val n: IRP = refineMV[Positive](2048)
-  val P: IRP = 32
+  val n: IntP = refineMV[Positive](2048)
+  val P: IntP = 32
   val (xs, ys, fs) = sampler(n)
   val targets : Covariates = toNEV(linspace(0d, 1d, length = 10).valuesIterator.map(_.toDV).toVector)
 

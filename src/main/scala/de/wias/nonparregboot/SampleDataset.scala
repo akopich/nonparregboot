@@ -14,7 +14,7 @@ import eu.timepit.refined.numeric.Positive
 object SampleDataset {
   def apply(xGen: () => Double,
             noiseGen: () => Double,
-            fstar: Double => Double): DataSampler = (n: IRP) =>  {
+            fstar: Double => Double): DataSampler = (n: IntP) =>  {
     val (covariates, responses, fs) = unzip3(n.times {
       val x = xGen()
       val eps = noiseGen()
@@ -24,11 +24,5 @@ object SampleDataset {
     })
 
     (covariates, responses.toVector.toDV, fs.toVector.toDV)
-  }
-
-  def unzip3[A, B, C](abcs: NonEmptyVector[(A, B, C)]): (NEV[A], NEV[B], NEV[C]) = abcs match {
-    case NonEmptyVector((a, b, c), tail) =>
-      val (as, bs, cs) = tail.unzip3
-      (NonEmptyVector(a, as), NonEmptyVector(b, bs), NonEmptyVector(c, cs))
   }
 }
