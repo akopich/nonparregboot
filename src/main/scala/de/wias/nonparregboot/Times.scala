@@ -13,9 +13,9 @@ import NEV._
 
 object Times {
   implicit class TimesWrapper(val i : IntP) {
-    def times[T: ClassTag](f:  => T): NEV[T] = toNEV ((0 until i.value) map (_ => f) )
+    def times[T: ClassTag](f:  => T): NEV[T] = toNEV ((0 until i) map (_ => f) )
 
-    def parTimes[T: ClassTag](f:  => T): NEV[T] = toNEV ( (0 until i.value).par map (_ => f) seq )
+    def parTimes[T: ClassTag](f:  => T): NEV[T] = toNEV ( (0 until i).par map (_ => f) seq )
   }
 }
 

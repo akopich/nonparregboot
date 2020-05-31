@@ -27,7 +27,7 @@ package object nonparregboot {
 
   type Predictor = Covariates => Responses
 
-  type EnsemblePredictor = NonEmptyVector[Predictor]
+  type EnsemblePredictor = NEV[Predictor]
 
   type Learner = (Covariates, Responses) => Predictor
 
@@ -39,8 +39,7 @@ package object nonparregboot {
     (x: DV, y: DV) => if (all(x <:< y)) -1d else
                       if (all(x >:> y)) 1d else 0d
 
-
-  def between(l: DV, m: DV, u: DV) = l < m && m < u
+  def between(l: DV, m: DV, u: DV): Boolean = l < m && m < u
 
   def ensemblePredict(ep: EnsemblePredictor, x: Covariates): NEV[Responses] = ep.map(_(x))
 
@@ -50,4 +49,6 @@ package object nonparregboot {
     case Right(size) => size
     case _ => throw NonPositiveToIntPException()
   }
+
+  implicit def unwrapIntP(positive: IntP) : Int = positive.value
 }

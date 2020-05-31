@@ -60,15 +60,15 @@ object Bootstrap {
     preds.count(between(lower, _, upper)).toDouble / preds.size
   }
 
-  def boot(iter: IntP, resps : NonEmptyVector[Responses]) = {
+  def boot(iter: IntP, resps : NEV[Responses]) = {
     iter times sampleBootPredictors(resps)
   }
 
-  def rand[A](as: NonEmptyVector[A]): A = as.toVector(rand(size(as)))
+  def rand[A](as: NEV[A]): A = as.toVector(rand(size(as)))
 
   def rand(i: Int)(implicit randbasis: RandBasis = Rand): Int = randbasis.randInt.sample() % i
 
-  def sampleBootPredictors(resp: NonEmptyVector[Responses]): Responses = average(size(resp) times rand(resp))
+  def sampleBootPredictors(resp: NEV[Responses]): Responses = average(size(resp) times rand(resp))
 
   def subsample(length: IntP, x: Covariates) : Covariates = length times rand(x)
 }

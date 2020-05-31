@@ -34,7 +34,7 @@ object runExperiment {
       StochasticAverager(experIter) {
         val (x, y, _) = sampler(trainSize)
         val (t, _, ft) = sampler(targetSize)
-        val rho = 0.001 * math.pow(trainSize.value, -2 * s / (2 * s + 1))
+        val rho = 0.001 * math.pow(trainSize.toDouble, -2 * s / (2 * s + 1))
         val el = KRR.fastKRR(partitions, rho, kernel)
         experiment(bootIter, el, x, y, t, ft)
       }

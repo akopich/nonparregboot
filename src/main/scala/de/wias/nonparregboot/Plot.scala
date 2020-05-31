@@ -38,7 +38,7 @@ object Plot extends App {
   val targets : Covariates = toNEV(linspace(0d, 1d, length = 10).valuesIterator.map(_.toDV).toVector)
 
   val s = 3d
-  val rho = 0.001 * math.pow(n.value, -2 * s / (2 * s + 1))
+  val rho = 0.001 * math.pow(n.toDouble, -2 * s / (2 * s + 1))
   val el = fastKRR(P, rho, Matern52(1d))
   val (fhat, (l, u)) : (DV, (DV, DV)) = predictWithConfidence(5000, 0.95, el, xs, ys, targets)
 
