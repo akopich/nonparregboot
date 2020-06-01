@@ -6,6 +6,7 @@ import cats.implicits._
 import cats.kernel.instances.IntGroup
 import NEV._
 
+
 trait Averageble[T] extends Semigroup[T] { self =>
   def |/|(x:T, cnt: IntP): T
 
@@ -20,7 +21,6 @@ object Averageble {
   implicit class AvgWrapper[T:Averageble](value: T) {
     def |/|(cnt: IntP): T = implicitly[Averageble[T]].|/|(value, cnt)
   }
-
 
   def average[T: Averageble](a: NEV[T]) =
     a.reduce |/| size(a)
@@ -45,6 +45,17 @@ object Averageble {
     override def |/|(x: A => B, cnt: IntP): A => B = (a: A) => x(a) |/| cnt
 
     override def combine(x: A => B, y: A => B): A => B = (a: A) => x(a) |+| y(a)
+  }
+
+  implicit def contextAverageble[F[_] : Monad, A: Averageble] = new Averageble[F[A]] {
+    override def |/|(fa: F[A], cnt: IntP): F[A] = for {
+      a <- fa
+    } yield a |/| cnt
+
+    override def combine(fx: F[A], fy: F[A]): F[A] = for {
+      x <- fx
+      y <- fy
+    } yield x |+| y
   }
 }
 

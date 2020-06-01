@@ -13,7 +13,7 @@ import eu.timepit.refined._
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.auto._
 import eu.timepit.refined.numeric._
-
+import Times._
 
 object Main extends IOApp {
   type Conf[T] = Reader[ExperimentConfig, T]
@@ -56,6 +56,10 @@ object Main extends IOApp {
     conf.checkCoverage(conf.bootIter, ep, t, ft)
   }
 
+  def averager(once: Conf[ExperimentResult]): Conf[ExperimentResult] = Reader { conf =>
+    average(conf.experIter parTimes once(conf))
+  }
+
   def runExperiment: Conf[ExperimentResult] = for {
     (x, y)  <- trainData
     (t, ft) <- targetData
@@ -84,7 +88,7 @@ object Main extends IOApp {
     val noiseGen = () => Gaussian(0d, 1d).sample()
     val sampler = sampleDataset(xGen, noiseGen, x => sin(x * math.Pi * 2d))
     val experimentConfig = ExperimentConfig(sampler, n, t, P, 3d, Matern52(1d), bootIter, avgIter, checkCoverageBall)
-    val result: ExperimentResult = runExperiment(experimentConfig)
+    val result: ExperimentResult = averager(runExperiment)(experimentConfig)
     println((experimentConfig, result).show)
   }
 
