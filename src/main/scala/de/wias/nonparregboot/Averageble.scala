@@ -22,20 +22,19 @@ object Averageble {
     def |/|(cnt: IntP): T = implicitly[Averageble[T]].|/|(value, cnt)
   }
 
-  def average[T: Averageble](a: NEV[T]) =
-    a.reduce |/| size(a)
+  def average[T: Averageble](a: NEV[T]): T = a.reduce |/| size(a)
 
-  implicit def intAverageble = new IntGroup with Averageble[Int]  {
+  implicit def intAverageble: IntGroup with Averageble[Int] = new IntGroup with Averageble[Int]  {
     override def |/|(x: Int, cnt: IntP): Int = x / cnt
   }
 
-  implicit def doubleAverageble = new Averageble[Double]  {
+  implicit def doubleAverageble: Averageble[Double] = new Averageble[Double]  {
     override def |/|(x: Double, cnt: IntP): Double = x / cnt
 
     override def combine(x: Double, y: Double): Double = x + y
   }
 
-  implicit def DVAverageble = new Averageble[DV] {
+  implicit def DVAverageble: Averageble[DV] = new Averageble[DV] {
     override def |/|(x: DV, cnt: IntP): DV = x / cnt.toDouble
 
     override def combine(x: DV, y: DV): DV = x + y
@@ -47,17 +46,15 @@ object Averageble {
     override def combine(x: A => B, y: A => B): A => B = (a: A) => x(a) |+| y(a)
   }
 
-  implicit def contextAverageble[F[_] : Monad, A: Averageble] = new Averageble[F[A]] {
-    override def |/|(fa: F[A], cnt: IntP): F[A] = for {
+  implicit def readerAverageble[A: Averageble, E]: Averageble[Reader[E, A]] = new Averageble[Reader[E, A]] {
+    type C[B] = Reader[E, B]
+    override def |/|(fa: C[A], cnt: IntP): C[A] = for {
       a <- fa
     } yield a |/| cnt
 
-    override def combine(fx: F[A], fy: F[A]): F[A] = for {
+    override def combine(fx: C[A], fy: C[A]): C[A] = for {
       x <- fx
       y <- fy
     } yield x |+| y
   }
 }
-
-
-

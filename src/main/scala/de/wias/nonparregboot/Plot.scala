@@ -10,13 +10,10 @@ import breeze.stats.distributions.{Gaussian, Laplace, RandBasis, ThreadLocalRand
 import ToDV._
 import KRR._
 import de.wias.nonparregboot.Bootstrap.predictWithConfidence
-import de.wias.nonparregboot.Plot.{covToDV, targets}
 import eu.timepit.refined.numeric.Positive
 import org.apache.commons.math3.random.MersenneTwister
 import eu.timepit.refined._
-import eu.timepit.refined.api.Refined
 import eu.timepit.refined.auto._
-import eu.timepit.refined.numeric._
 import NEV._
 
 

@@ -9,10 +9,7 @@ import com.github.fommil.netlib.BLAS
 import Averageble._
 import Bootstrap._
 import breeze.stats.distributions.{Gaussian, Uniform}
-import eu.timepit.refined._
-import eu.timepit.refined.api.Refined
 import eu.timepit.refined.auto._
-import eu.timepit.refined.numeric._
 import Times._
 
 object Main extends IOApp {
@@ -93,14 +90,14 @@ object Main extends IOApp {
   }
 
   override def run(args: List[String]): IO[ExitCode] = {
-    val functor = implicitly[Functor[List]].compose(implicitly[Functor[Vector]])
-    val ps :: ts :: Nil = functor.map(List(7 to 12, 1 to 9).map(_.map(math.pow(2, _).toInt).toVector))(toIRP)
+    val functor = implicitly[Functor[List]].compose(implicitly[Functor[List]])
+    val ps :: ts :: Nil = functor.map(List(7 to 12 toList, 1 to 9 toList))(i => toIRP(math.pow(2, i).toInt))
 
     val n : IntP = 65536 // 2^16
     val tasks = for (p <- ps; t <- ts) yield configureAndRun(n, p, t, 5000, 200)
 
     NonEmptyList(IO {
       println(BLAS.getInstance().getClass.getName)
-    }, tasks.toList).reduce
+    }, tasks).reduce
   }.as(ExitCode.Success)
 }

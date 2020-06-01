@@ -9,12 +9,6 @@ import cats.implicits._
 import Averageble._
 import Times._
 import ToDV._
-import eu.timepit.refined._
-import eu.timepit.refined.api.Refined
-import eu.timepit.refined.auto._
-import eu.timepit.refined.numeric._
-import eu.timepit.refined.api.Refined
-import eu.timepit.refined.numeric.Positive
 import org.apache.commons.math3.stat.descriptive.rank.Percentile
 import NEV._
 

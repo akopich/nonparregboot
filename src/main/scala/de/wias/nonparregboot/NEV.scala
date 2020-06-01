@@ -5,9 +5,6 @@ import cats.data._
 import cats.implicits._
 import eu.timepit.refined.numeric.Positive
 import eu.timepit.refined.refineV
-import eu.timepit.refined.api.Refined
-import eu.timepit.refined.numeric.Positive
-import eu.timepit.refined.refineV
 
 
 object NEV {

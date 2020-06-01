@@ -1,17 +1,8 @@
 package de.wias.nonparregboot
 
-import breeze.linalg.DenseVector
-import breeze.numerics.sqrt
-import breeze.stats.distributions.Gaussian
-import cats._
-import cats.data._
-import cats.implicits._
 import ToDV._
 import Times._
-import eu.timepit.refined.api.Refined
-import eu.timepit.refined.numeric.Positive
 import NEV._
-
 
 object sampleDataset {
   def apply(xGen: () => Double,
