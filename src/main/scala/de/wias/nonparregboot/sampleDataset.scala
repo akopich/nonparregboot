@@ -4,7 +4,7 @@ import ToDV._
 import NEV._
 
 object sampleDataset {
-  def apply(xGen: () => Double,
+  def apply(xGen:     () => Double,
             noiseGen: () => Double,
             fstar: Double => Double): DataSampler = (n: Pos) =>  {
     val (covariates, responses, fs) = unzip3(n.times {

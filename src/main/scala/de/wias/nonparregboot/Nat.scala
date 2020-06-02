@@ -12,6 +12,8 @@ import scala.reflect.ClassTag
 
 sealed trait Nat {
   def value: Int
+
+  override def toString: String = value.toString
 }
 
 case object Zero extends Nat {
@@ -53,15 +55,19 @@ object Nat {
     }
   }
 
-  def dec(a: Pos): Nat = a match {
-    case One         => Zero
+  def dec(a: More): Pos = a match {
     case More(2)     => One
     case More(value) => More(value - 1)
   }
 
+  def dec(a: Pos): Nat = a match {
+    case One     => Zero
+    case m: More => dec(m)
+  }
+
   def inc(a: Nat): Pos = a match {
-    case Zero        => One
-    case aa: Pos     => inc(aa)
+    case Zero    => One
+    case aa: Pos => inc(aa)
   }
 
   def inc(a: Pos): Pos = a match {
@@ -70,35 +76,35 @@ object Nat {
   }
 
   def sum(a: Nat, b: Nat): Nat = (a, b) match {
-    case (Zero, _)            => b
-    case (_, Zero)            => a
-    case (ap: Pos, bp: Pos)   => sum(ap, bp)
+    case (Zero, _)          => b
+    case (_, Zero)          => a
+    case (ap: Pos, bp: Pos) => sum(ap, bp)
   }
 
   def sum(a: Nat, b: Pos): Pos = (a, b) match {
-    case (Zero, _)       => b
-    case (ap: Pos, _)    => sum(ap, b)
+    case (Zero, _)    => b
+    case (ap: Pos, _) => sum(ap, b)
   }
 
-  def sum(a: Pos, b: Pos): Pos = (a,b) match {
-    case (One, _) => inc(b)
-    case (_, One) => inc(a)
-    case (More(va), More(vb))  => More(va + vb)
+  def sum(a: Pos, b: Pos): Pos = (a, b) match {
+    case (One, _)             => inc(b)
+    case (_, One)             => inc(a)
+    case (More(va), More(vb)) => More(va + vb)
   }
 
   def prod(a: Pos, b: Pos): Pos = (a, b) match {
-    case (One, _) => b
-    case (_, One) => a
+    case (One, _)             => b
+    case (_, One)             => a
     case (More(aa), More(bb)) => More(aa * bb)
   }
 
   def prod(a: Nat, b: Nat): Nat = (a, b) match {
-    case (Zero, _)            => Zero
-    case (_, Zero)            => Zero
-    case (ap: Pos, bp: Pos)   => prod(ap, bp)
+    case (Zero, _) |
+         (_, Zero)          => Zero
+    case (ap: Pos, bp: Pos) => prod(ap, bp)
   }
 
-  implicit val natIsRig = new Rig[Nat] {
+  implicit val natIsRig: Rig[Nat] = new Rig[Nat] {
     override def one: Nat = One
 
     override def zero: Nat = Zero
@@ -109,9 +115,14 @@ object Nat {
   }
 
   implicit class NatTimesWrap(n: Nat) {
-    def times[T](f: => T): Vector[T] = 0 until n.value map(_ => f) toVector
+    def times[T](f: => T): Vector[T] = 0 until n.value map (_ => f) toVector
 
-    def parTimes[T: ClassTag](f: => T): Vector[T] = n.times(None).par map(_ => f) seq
+    def parTimes[T: ClassTag](f: => T): Vector[T] = n.times(None).par map (_ => f) seq
+  }
+
+  def pow(base: Pos)(power: Pos): Pos = power match {
+    case One     => base
+    case m: More => prod(base, pow(base)(dec(m)))
   }
 
   implicit class PosTimesWrap(p: Pos) {
@@ -122,4 +133,5 @@ object Nat {
       NonEmptyVector(head, tail)
     }
   }
+
 }

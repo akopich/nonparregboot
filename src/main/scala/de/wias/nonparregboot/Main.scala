@@ -90,7 +90,7 @@ object Main extends IOApp {
 
   override def run(args: List[String]): IO[ExitCode] = {
     val functor = implicitly[Functor[List]].compose(implicitly[Functor[List]])
-    val ps :: ts :: Nil = functor.map(List(7 to 12 toList, 1 to 9 toList))(i => mkPos(math.pow(2, i).toInt))
+    val ps :: ts :: Nil = functor.map(List(7 to 12 toList, 1 to 9 toList))(mkPos _ >>>  pow(p"2"))
 
     val n : Pos = p"65536" // 2^16
     val tasks = for (p <- ps; t <- ts) yield configureAndRun(n, p, t, p"5000", p"200")
