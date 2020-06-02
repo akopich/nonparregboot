@@ -92,7 +92,7 @@ object Main extends IOApp {
     val functor = implicitly[Functor[List]].compose(implicitly[Functor[List]])
     val ps :: ts :: Nil = functor.map(List(7 to 12 toList, 1 to 9 toList))(mkPos _ >>>  pow(p"2"))
 
-    val n : Pos = p"65536" // 2^16
+    val n : Pos = pow(p"2")(p"16")
     val tasks = for (p <- ps; t <- ts) yield configureAndRun(n, p, t, p"5000", p"200")
 
     NonEmptyList(IO {
