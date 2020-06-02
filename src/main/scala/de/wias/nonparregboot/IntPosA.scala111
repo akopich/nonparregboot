@@ -1,0 +1,62 @@
+package de.wias.nonparregboot
+
+import cats.data.{NonEmptyList, NonEmptyVector}
+import cats.kernel.{CommutativeMonoid, Monoid, Semigroup}
+
+sealed trait IntPos  {
+  require(value > 0, "IntPos holds only positive ints")
+
+  def value : Int
+
+  def +(other: IntPos): IntPos = More(this.value + other.value)
+
+  def +(other: Nat): IntPos = More(this.value + other.value)
+
+  def *(other: IntPos): IntPos = More(this.value * other.value)
+
+  def **(power: IntPos): IntPos = power match {
+    case One              => this
+    case powerMore : More => this * (this ** (powerMore--))
+  }
+
+  def ++ : IntPos
+}
+
+object One extends IntPos {
+  override def value: Int = 1
+
+  override def ++ : IntPos = More(2)
+}
+
+case class More(value: Int) extends IntPos {
+  def -- : IntPos = if (value == 2) One else More(value - 1)
+
+  override def ++ : IntPos = More(value + 1)
+}
+
+object IntPos {
+  implicit val natMonoid = new CommutativeMonoid[Nat] {
+    override def empty: Nat = Nat(0)
+
+    override def combine(x: Nat, y: Nat): Nat = Nat(x.value + y.value)
+  }
+
+  implicit def toInt(nat: Nat) = nat.value
+
+  implicit def toInt(pos: IntPos) = pos.value
+
+  def apply(value: Int): IntPos = {
+    require(value > 0, "IntPos holds only positive ints")
+    if (value == 1) One else More(value)
+  }
+
+  def size[A](as: Seq[A]) : Nat = Nat(as.size)
+
+  def size[A](as: NonEmptyVector[A]): IntPos = size(as.tail)++
+}
+
+case class Nat(value: Int)  {
+  require(value >= 0, "Natural number should be non-negative")
+
+  def ++ : IntPos = if (value == 0) One else More(value + 1)
+}

@@ -9,8 +9,7 @@ import com.github.fommil.netlib.BLAS
 import Averageble._
 import Bootstrap._
 import breeze.stats.distributions.{Gaussian, Uniform}
-import eu.timepit.refined.auto._
-import Times._
+import Nat._
 
 object Main extends IOApp {
   type Conf[T] = Reader[ExperimentConfig, T]
@@ -20,11 +19,11 @@ object Main extends IOApp {
   implicit def tupleAvg(implicit avg: Averageble[Double]): Averageble[ExperimentResult] = avg.compose(avg)
 
   case class ExperimentConfig(sampler: DataSampler,
-                              trainSize: IntP, targetSize: IntP, partitions: IntP,
+                              trainSize: Pos, targetSize: Pos, partitions: Pos,
                               s: Double, kernel: Kernel,
-                              bootIter: IntP,
-                              experIter: IntP,
-                              checkCoverage: (IntP, EnsemblePredictor,
+                              bootIter: Pos,
+                              experIter: Pos,
+                              checkCoverage: (Pos, EnsemblePredictor,
                                                Covariates, FStarValues
                                              ) => ExperimentResult
                              )
@@ -65,14 +64,14 @@ object Main extends IOApp {
     result  <- run(el(x, y), t, ft)
   } yield result
 
-  def checkCoverageBounds(bootIter: IntP,
+  def checkCoverageBounds(bootIter: Pos,
                           ep: EnsemblePredictor,
                           t: Covariates, ft: FStarValues): ExperimentResult = {
       val (that, (l, u)) = predictWithConfidence(bootIter, 0.95, ep, t)
       (MSE(that, ft), if (between(l, ft, u)) 1d else 0d)
   }
 
-  def checkCoverageBall(bootIter: IntP,
+  def checkCoverageBall(bootIter: Pos,
                         ep: EnsemblePredictor,
                         t: Covariates, ft: FStarValues): ExperimentResult = {
       val (that, quantile) = predictWithBall(bootIter, 0.95, ep, t)
@@ -80,7 +79,7 @@ object Main extends IOApp {
       (mse, if (mse < quantile) 1d else 0d)
   }
 
-  def configureAndRun(n: IntP, P: IntP, t: IntP, bootIter: IntP, avgIter: IntP) = IO {
+  def configureAndRun(n: Pos, P: Pos, t: Pos, bootIter: Pos, avgIter: Pos) = IO {
     val xGen     = () => Uniform(0d, 1d).sample()
     val noiseGen = () => Gaussian(0d, 1d).sample()
     val sampler = sampleDataset(xGen, noiseGen, x => sin(x * math.Pi * 2d))
@@ -91,10 +90,10 @@ object Main extends IOApp {
 
   override def run(args: List[String]): IO[ExitCode] = {
     val functor = implicitly[Functor[List]].compose(implicitly[Functor[List]])
-    val ps :: ts :: Nil = functor.map(List(7 to 12 toList, 1 to 9 toList))(i => toIRP(math.pow(2, i).toInt))
+    val ps :: ts :: Nil = functor.map(List(7 to 12 toList, 1 to 9 toList))(i => mkPos(math.pow(2, i).toInt))
 
-    val n : IntP = 65536 // 2^16
-    val tasks = for (p <- ps; t <- ts) yield configureAndRun(n, p, t, 5000, 200)
+    val n : Pos = p"65536" // 2^16
+    val tasks = for (p <- ps; t <- ts) yield configureAndRun(n, p, t, p"5000", p"200")
 
     NonEmptyList(IO {
       println(BLAS.getInstance().getClass.getName)

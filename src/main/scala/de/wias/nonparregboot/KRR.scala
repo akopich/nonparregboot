@@ -7,11 +7,12 @@ import cats.implicits._
 
 import ToDV._
 import NEV._
-
+import Nat._
+import HeadTailDecomposable._
 
 object KRR {
   def fastKRR(P: Int, rho: Double, kernel: Kernel): EnsembleLearner = (x: Covariates, y: Responses) => {
-    val chunkSize = toIRP((x.size / P).toInt)
+    val chunkSize = mkPos((x.size / P).toInt)
     val learner = krr(rho, kernel)
 
     val groupedResponses: NEV[Responses] = toNEV(y.toArray.grouped(chunkSize).map(_.toSeq.toDV).toSeq)

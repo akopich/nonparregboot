@@ -1,13 +1,12 @@
 package de.wias.nonparregboot
 
 import ToDV._
-import Times._
 import NEV._
 
 object sampleDataset {
   def apply(xGen: () => Double,
             noiseGen: () => Double,
-            fstar: Double => Double): DataSampler = (n: IntP) =>  {
+            fstar: Double => Double): DataSampler = (n: Pos) =>  {
     val (covariates, responses, fs) = unzip3(n.times {
       val x = xGen()
       val eps = noiseGen()

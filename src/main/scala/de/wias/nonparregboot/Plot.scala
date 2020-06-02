@@ -10,11 +10,9 @@ import breeze.stats.distributions.{Gaussian, Laplace, RandBasis, ThreadLocalRand
 import ToDV._
 import KRR._
 import de.wias.nonparregboot.Bootstrap.predictWithConfidence
-import eu.timepit.refined.numeric.Positive
 import org.apache.commons.math3.random.MersenneTwister
-import eu.timepit.refined._
-import eu.timepit.refined.auto._
 import NEV._
+import Nat._
 
 
 object Plot extends App {
@@ -29,15 +27,15 @@ object Plot extends App {
   val noiseGen = () => Gaussian(0d, 1d).sample()
   val fstar: Double => Double = x => sin(x * math.Pi * 2d)
   val sampler = sampleDataset(xGen, noiseGen, fstar)
-  val n: IntP = refineMV[Positive](2048)
-  val P: IntP = 32
+  val n = p"2048"
+  val P = p"32"
   val (xs, ys, fs) = sampler(n)
   val targets : Covariates = toNEV(linspace(0d, 1d, length = 10).valuesIterator.map(_.toDV).toVector)
 
   val s = 3d
   val rho = 0.001 * math.pow(n.toDouble, -2 * s / (2 * s + 1))
   val el = fastKRR(P, rho, Matern52(1d))
-  val (fhat, (l, u)) : (DV, (DV, DV)) = predictWithConfidence(5000, 0.95, el(xs, ys), targets)
+  val (fhat, (l, u)) : (DV, (DV, DV)) = predictWithConfidence(p"5000", 0.95, el(xs, ys), targets)
 
   val figure = Figure()
   val p = figure.subplot(0)

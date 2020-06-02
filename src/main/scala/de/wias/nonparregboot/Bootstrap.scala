@@ -7,13 +7,14 @@ import cats._
 import cats.data._
 import cats.implicits._
 import Averageble._
-import Times._
 import ToDV._
 import org.apache.commons.math3.stat.descriptive.rank.Percentile
 import NEV._
+import Nat._
+import HeadTailDecomposable._
 
 object Bootstrap {
-  def predictWithBall(iters: IntP,
+  def predictWithBall(iters: Pos,
                       alpha: Double,
                       ep: EnsemblePredictor,
                       t: Covariates): (Responses, Double) = {
@@ -24,7 +25,7 @@ object Bootstrap {
     (fhat, quantile / size(t))
   }
 
-  def predictWithConfidence(iters: IntP,
+  def predictWithConfidence(iters: Pos,
                             alpha: Double,
                             ep: EnsemblePredictor,
                             t: Covariates): (Responses, (DV, DV)) = {
@@ -51,7 +52,7 @@ object Bootstrap {
     preds.count(between(lower, _, upper)).toDouble / preds.size
   }
 
-  def boot(iter: IntP, resps : NEV[Responses]) = {
+  def boot(iter: Pos, resps : NEV[Responses]) = {
     iter times sampleBootPredictors(resps)
   }
 
@@ -61,5 +62,5 @@ object Bootstrap {
 
   def sampleBootPredictors(resp: NEV[Responses]): Responses = average(size(resp) times rand(resp))
 
-  def subsample(length: IntP, x: Covariates) : Covariates = length times rand(x)
+  def subsample(length: Pos, x: Covariates) : Covariates = length times rand(x)
 }

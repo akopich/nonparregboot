@@ -6,13 +6,8 @@ import cats.data.NonEmptyVector
 import cats._
 import cats.data._
 import cats.implicits._
-import eu.timepit.refined.api.Refined
-import eu.timepit.refined.numeric.Positive
-import eu.timepit.refined.refineV
 
 package object nonparregboot {
-  type IntP = Int Refined Positive
-
   type NEV[A] = NonEmptyVector[A]
 
   type DV = DenseVector[Double]
@@ -33,7 +28,7 @@ package object nonparregboot {
 
   type EnsembleLearner = (Covariates, Responses) => EnsemblePredictor
 
-  type DataSampler = IntP => (Covariates, Responses, FStarValues)
+  type DataSampler = Pos => (Covariates, Responses, FStarValues)
 
   implicit val partialOrderDV: PartialOrder[DV] =
     (x: DV, y: DV) => if (all(x <:< y)) -1d else
@@ -43,12 +38,5 @@ package object nonparregboot {
 
   def ensemblePredict(ep: EnsemblePredictor, x: Covariates): NEV[Responses] = ep.map(_(x))
 
-  case class NonPositiveToIntPException() extends Exception
-
-  def toIRP(i: Int): IntP = refineV[Positive](i) match {
-    case Right(size) => size
-    case _ => throw NonPositiveToIntPException()
-  }
-
-  implicit def unwrapIntP(positive: IntP) : Int = positive.value
+  case class NonPositiveToPosException() extends Exception
 }

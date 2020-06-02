@@ -3,9 +3,7 @@ package de.wias.nonparregboot
 import cats._
 import cats.data._
 import cats.implicits._
-import eu.timepit.refined.numeric.Positive
-import eu.timepit.refined.refineV
-
+import Nat._
 
 object NEV {
 
@@ -23,11 +21,6 @@ object NEV {
       (NonEmptyVector(a, as), NonEmptyVector(b, bs))
   }
 
-  def size[A](as : NEV[A]): IntP = refineV[Positive](as.size.toInt) match {
-    case Right(size) => size
-    case _ => throw new ArithmeticException("Size of a non-empty vector is not positive. I should have never been thrown")
-  }
-
   case class EmptySeqToNEVException() extends Exception
 
   def toNEV[T](ts: Seq[T]): NEV[T] = ts match {
@@ -35,6 +28,6 @@ object NEV {
     case _ => throw EmptySeqToNEVException()
   }
 
-  def group[T](ts: NEV[T], size: IntP): NEV[NEV[T]] = toNEV(ts.toVector.grouped(size).map(toNEV).toSeq)
+  def group[T](ts: NEV[T], size: Pos): NEV[NEV[T]] = toNEV(ts.toVector.grouped(size).map(toNEV).toSeq)
 }
 
