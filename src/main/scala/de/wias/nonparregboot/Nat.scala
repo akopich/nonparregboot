@@ -115,9 +115,9 @@ object Nat {
   }
 
   implicit class NatTimesWrap(n: Nat) {
-    def times[T](f: => T): Vector[T] = 0 until n.value map (_ => f) toVector
+    def times[T](f: => T): Vector[T] = Vector.fill(n)(f)
 
-    def parTimes[T: ClassTag](f: => T): Vector[T] = n.times(None).par map (_ => f) seq
+    def parTimes[T: ClassTag](f: => T): Vector[T] = (n times None).par map (_ => f) seq
   }
 
   def pow(base: Pos)(power: Pos): Pos = power match {
@@ -126,10 +126,10 @@ object Nat {
   }
 
   implicit class PosTimesWrap(p: Pos) {
-    def times[T](f: => T): NonEmptyVector[T] = NonEmptyVector(f, dec(p).times(f))
+    def times[T](f: => T): NonEmptyVector[T] = NonEmptyVector(f, dec(p) times f)
 
     def parTimes[T: ClassTag](f: => T): NonEmptyVector[T] = {
-      val head +: tail = (0 until p.value).par.map(_ => f).seq.toVector
+      val head +: tail = Vector.fill(p)(None).par.map(_ => f).seq
       NonEmptyVector(head, tail)
     }
   }

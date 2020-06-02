@@ -13,12 +13,13 @@ import de.wias.nonparregboot.Bootstrap.predictWithConfidence
 import org.apache.commons.math3.random.MersenneTwister
 import NEV._
 import Nat._
+import scala.{Tuple2 => &}
 
 
 object Plot extends App {
   def covToDV(xs: Covariates) = xs.map(_(0)).toVector.toDV
 
-  implicit val randBasis: RandBasis = new RandBasis(new ThreadLocalRandomGenerator(new MersenneTwister(42069)))
+  implicit val randBasis: RandBasis = new RandBasis(new ThreadLocalRandomGenerator(new MersenneTwister(13)))
 
   val xGen : () => Double     = () => {
     val g = Laplace(0.5, 0.08).sample()
@@ -45,7 +46,7 @@ object Plot extends App {
   p += scatter(DenseVector(-0.05, 1.05), DenseVector(0d, 0d), _ => 0d, colors = _ => Color.RED)
   p += scatter(covToDV(targets), fhat, _ => 0.01, colors = _ => Color.RED)
 
-  for (((t, l), u) <- covToDV(targets).toArray.zip(l.toArray).zip(u.toArray)) {
+  for (t & l & u <- covToDV(targets).toArray.zip(l.toArray).zip(u.toArray)) {
     p += plot(DenseVector(t, t), DenseVector(l, u), colorcode = "red")
   }
 
