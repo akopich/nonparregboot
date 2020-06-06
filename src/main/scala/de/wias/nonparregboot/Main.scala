@@ -10,9 +10,24 @@ import Averageble._
 import Bootstrap._
 import breeze.stats.distributions.{Gaussian, Uniform}
 import Nat._
+import cats.arrow.FunctionK
+import de.wias.random.RandomPure._
+import cats.arrow.FunctionK._
+import cats.~>
+import de.wias.random.MersenneTwisterImmutable
+import de.wias.random.RandomPure._
+import spire.random.rng.MersenneTwister64
+
+import scala.collection.parallel.CollectionConverters._
+import scala.collection.parallel.ParSeq
+import NEV._
+
 
 object Main extends IOApp {
   type Conf[T] = Reader[ExperimentConfig, T]
+
+  type ConfRandom[T] = ReaderT[Random, ExperimentConfig, T]
+  def ConfRandom[T](f: ExperimentConfig => Random[T]): ConfRandom[T] = Kleisli(f)
 
   type ExperimentResult = (Double, Double)
 
@@ -33,14 +48,14 @@ object Main extends IOApp {
       s"n=$trainSize\tt=$targetSize\tP=$partitions\t\trmse=${math.sqrt(rmse)}\tcoverage=$coverage"
   }
 
-  def trainData: Conf[(Covariates, Responses)] = Reader { conf =>
-    val (x, y, _) = conf.sampler(conf.trainSize)
-    (x, y)
+  def trainData: ConfRandom[(Covariates, Responses)] = ConfRandom { conf => for {
+      (x, y, _) <- conf.sampler(conf.trainSize)
+    } yield (x, y)
   }
 
-  def targetData: Conf[(Covariates, FStarValues)] = Reader { conf =>
-    val (t, _, ft) = conf.sampler(conf.targetSize)
-    (t, ft)
+  def targetData: ConfRandom[(Covariates, FStarValues)] = ConfRandom { conf => for {
+      (t, _, ft) <- conf.sampler(conf.targetSize)
+    } yield (t, ft)
   }
 
   def rho: Conf[Double] = Reader { conf => 0.001 * math.pow(conf.trainSize.toDouble, -2 * conf.s / (2 * conf.s + 1)) }
@@ -52,16 +67,27 @@ object Main extends IOApp {
     conf.checkCoverage(conf.bootIter, ep, t, ft)
   }
 
-  def averager(once: Conf[ExperimentResult]): Conf[ExperimentResult] = Reader { conf =>
-    average(conf.experIter parTimes once(conf))
+  def averager(once: ConfRandom[ExperimentResult]): ConfRandom[ExperimentResult] = ConfRandom { conf =>
+    val parSeeds: Random[ParSeq[Gen]] = for {
+      seeds <- randomSplit(conf.experIter)
+    } yield seeds.par
+    for {
+      seeds <- parSeeds
+    } yield average(toNEV(seeds.map(gen => sample(once(conf), gen)).seq.toList))
   }
 
-  def runExperiment: Conf[ExperimentResult] = for {
+  def lift[T](k : Kleisli[Id, ExperimentConfig, T]): Kleisli[Random, ExperimentConfig, T] = ConfRandom { conf =>
+    Random { gen =>
+      (gen, k(conf))
+    }
+  }
+
+  def runExperiment: ConfRandom[ExperimentResult] = for {
     (x, y)  <- trainData
     (t, ft) <- targetData
-    rho     <- rho
-    el      <- el(rho)
-    result  <- run(el(x, y), t, ft)
+    rho     <- lift(rho)
+    el      <- lift(el(rho))
+    result  <- lift(run(el(x, y), t, ft))
   } yield result
 
   def checkCoverageBounds(bootIter: Pos,
@@ -79,24 +105,32 @@ object Main extends IOApp {
       (mse, if (mse < quantile) 1d else 0d)
   }
 
-  def configureAndRun(n: Pos, P: Pos, t: Pos, bootIter: Pos, avgIter: Pos) = IO {
-    val xGen     = () => Uniform(0d, 1d).sample()
-    val noiseGen = () => Gaussian(0d, 1d).sample()
+  def configureAndRun(n: Pos, P: Pos, t: Pos, bootIter: Pos, avgIter: Pos): Random[IO[Unit]] = {
+    val xGen = uniform01
+    val noiseGen = gaussian(0d, 1d)
     val sampler = sampleDataset(xGen, noiseGen, x => sin(x * math.Pi * 2d))
     val experimentConfig = ExperimentConfig(sampler, n, t, P, 3d, Matern52(1d), bootIter, avgIter, checkCoverageBall)
-    val result: ExperimentResult = averager(runExperiment)(experimentConfig)
-    println((experimentConfig, result).show)
+    val cr = for {
+      res <- averager(runExperiment)
+    } yield IO {
+      println(res.show)
+    }
+    cr(experimentConfig)
   }
+
 
   override def run(args: List[String]): IO[ExitCode] = {
     val functor = implicitly[Functor[List]].compose(implicitly[Functor[List]])
-    val ps :: ts :: Nil = functor.map(List(7 to 12 toList, 1 to 9 toList))(mkPos _ >>>  pow(p"2"))
+    val ps :: ts :: Nil = functor.map(List(7 to 8 toList, 1 to 2 toList))(mkPos _ >>>  pow(p"2"))
+
+    val gen = new MersenneTwisterImmutable(MersenneTwister64.fromTime(time = 13L))
 
     val n : Pos = pow(p"2")(p"16")
-    val tasks = for (p <- ps; t <- ts) yield configureAndRun(n, p, t, p"5000", p"200")
+    val tasks = ((for (p <- ps; t <- ts) yield configureAndRun(n, p, t, p"5000", p"200")).sequence)
+      .run(gen).value._2.reduce(_ *> _)
 
-    NonEmptyList(IO {
+    IO {
       println(BLAS.getInstance().getClass.getName)
-    }, tasks).reduce
+    } *> tasks
   }.as(ExitCode.Success)
 }

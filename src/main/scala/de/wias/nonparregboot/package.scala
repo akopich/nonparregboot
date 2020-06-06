@@ -6,6 +6,7 @@ import cats.data.NonEmptyVector
 import cats._
 import cats.data._
 import cats.implicits._
+import de.wias.random.RandomPure._
 
 package object nonparregboot {
   type NEV[A] = NonEmptyVector[A]
@@ -28,7 +29,7 @@ package object nonparregboot {
 
   type EnsembleLearner = (Covariates, Responses) => EnsemblePredictor
 
-  type DataSampler = Pos => (Covariates, Responses, FStarValues)
+  type DataSampler = Pos => Random[(Covariates, Responses, FStarValues)]
 
   implicit val partialOrderDV: PartialOrder[DV] =
     (x: DV, y: DV) => if (all(x <:< y)) -1d else
