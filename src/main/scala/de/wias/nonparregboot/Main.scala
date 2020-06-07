@@ -45,7 +45,7 @@ object Main extends IOApp {
 
   implicit val showConf: Show[(ExperimentConfig, (Double, Double))] = {
     case (ExperimentConfig(_, trainSize, targetSize, partitions, _, _, _, _, _), (rmse, coverage)) =>
-      s"n=$trainSize\tt=$targetSize\tP=$partitions\t\trmse=${math.sqrt(rmse)}\tcoverage=$coverage\ttime=${System.currentTimeMillis()}"
+      s"n=$trainSize\tt=$targetSize\tP=$partitions\t\trmse=${math.sqrt(rmse)}\tcoverage=$coverage"
   }
 
   def trainData: ConfRandom[(Covariates, Responses)] = ConfRandom { conf => for {

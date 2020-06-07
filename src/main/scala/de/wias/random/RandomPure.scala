@@ -9,9 +9,12 @@ import spire.random.rng.MersenneTwister64
 import scala.util.Random
 
 class MersenneTwisterImmutable(private val gen: MersenneTwister64) {
+//  def apply[T](action : MersenneTwister64 => T): (MersenneTwisterImmutable, T) = {
+//    val newgen = gen.copyInit
+//    (new MersenneTwisterImmutable(newgen), action(newgen))
+//  }
   def apply[T](action : MersenneTwister64 => T): (MersenneTwisterImmutable, T) = {
-    val newgen = gen.copyInit
-    (new MersenneTwisterImmutable(newgen), action(newgen))
+    (this, action(gen))
   }
 }
 
