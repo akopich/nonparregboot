@@ -101,15 +101,15 @@ object Main extends IOApp {
       (mse, if (mse < quantile) 1d else 0d)
   }
 
-  def configureAndRun(n: Pos, P: Pos, t: Pos, bootIter: Pos, avgIter: Pos): Random[IO[Unit]] = {
+  def configureAndRun(n: Pos, P: Pos, t: Pos, bootIter: Pos, avgIter: Pos): Random[IO[Unit]] = Random { gen =>
     val xGen = uniform01
     val noiseGen = gaussian(0d, 1d)
     val sampler = sampleDataset(xGen, noiseGen, x => sin(x * math.Pi * 2d))
     val experimentConfig = ExperimentConfig(sampler, n, t, P, 3d, Matern52(1d), bootIter, avgIter, checkCoverageBall)
-    val cr = for {
-      res <- averager(runExperiment)
-    } yield IO { println((experimentConfig, res).show) }
-    cr(experimentConfig)
+    (gen, IO {
+      val res = sample(averager(runExperiment)(experimentConfig), gen)
+      println((experimentConfig, res).show)
+    })
   }
 
 
