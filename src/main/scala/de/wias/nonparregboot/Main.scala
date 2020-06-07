@@ -117,7 +117,7 @@ object Main extends IOApp {
 
   override def run(args: List[String]): IO[ExitCode] = {
     val functor = implicitly[Functor[List]].compose(implicitly[Functor[List]])
-    val ps :: ts :: Nil = functor.map(List(7 to 8 toList, 1 to 2 toList))(mkPos _ >>>  pow(p"2"))
+    val ps :: ts :: Nil = functor.map(List(7 to 12 toList, 1 to 9 toList))(mkPos _ >>>  pow(p"2"))
 
     val gen = new MersenneTwisterImmutable(MersenneTwister64.fromTime(time = 13L))
 
