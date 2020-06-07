@@ -67,6 +67,6 @@ object Bootstrap {
   def intVector(size: Pos): Random[NEV[Int]] = Random { gen =>
     val arr = Array.ofDim[Int](size)
     val (newgen, _) = gen(_.fillInts(arr))
-    (newgen, toNEV(arr))
+    (newgen, toNEV(arr.map(int => math.abs(int) % size)))
   }
 }
