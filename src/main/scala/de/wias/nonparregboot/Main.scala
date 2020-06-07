@@ -45,7 +45,7 @@ object Main extends IOApp {
 
   implicit val showConf: Show[(ExperimentConfig, (Double, Double))] = {
     case (ExperimentConfig(_, trainSize, targetSize, partitions, _, _, _, _, _), (rmse, coverage)) =>
-      s"n=$trainSize\tt=$targetSize\tP=$partitions\t\trmse=${math.sqrt(rmse)}\tcoverage=$coverage"
+      s"n=$trainSize\tt=$targetSize\tP=$partitions\t\trmse=${math.sqrt(rmse)}\tcoverage=$coverage\ttime=${System.currentTimeMillis()}"
   }
 
   def trainData: ConfRandom[(Covariates, Responses)] = ConfRandom { conf => for {
@@ -68,12 +68,8 @@ object Main extends IOApp {
   }
 
   def averager(once: ConfRandom[ExperimentResult]): ConfRandom[ExperimentResult] = ConfRandom { conf =>
-    val parSeeds: Random[ParSeq[Gen]] = for {
-      seeds <- randomSplit(conf.experIter)
-    } yield seeds.par
-    for {
-      seeds <- parSeeds
-    } yield average(toNEV(seeds.map(gen => sample(once(conf), gen)).seq.toList))
+    val parSeeds: Random[ParSeq[Gen]] = randomSplit(conf.experIter).map(_.par)
+    parSeeds.map(seeds => average(toNEV(seeds.map(gen => sample(once(conf), gen)).seq.toList)))
   }
 
   def lift[T](k : Kleisli[Id, ExperimentConfig, T]): Kleisli[Random, ExperimentConfig, T] = ConfRandom { conf =>
