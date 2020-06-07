@@ -89,10 +89,10 @@ object Main extends IOApp {
   def checkCoverageBounds(bootIter: Pos,
                           ep: EnsemblePredictor,
                           t: Covariates, ft: FStarValues): Random[ExperimentResult] = {
-      val (that, bounds) = predictWithConfidence(bootIter, 0.95, ep, t)
-      bounds.map{ case(l, u) =>
-        (MSE(that, ft), if (between(l, ft, u)) 1d else 0d)
-      }
+    val (that, bounds) = predictWithConfidence(bootIter, 0.95, ep, t)
+    bounds.map { case(l, u) =>
+      (MSE(that, ft), if (between(l, ft, u)) 1d else 0d)
+    }
   }
 
   def checkCoverageBall(bootIter: Pos,
