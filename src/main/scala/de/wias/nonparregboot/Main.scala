@@ -122,11 +122,8 @@ object Main extends IOApp {
     val gen = new MersenneTwisterImmutable(MersenneTwister64.fromTime(time = 13L))
 
     val n : Pos = pow(p"2")(p"16")
-    val tasks = (for (p <- ps; t <- ts)
-      yield {
-        val rio = configureAndRun(n, p, t, p"5000", p"200")
-        sample(rio, gen)
-      }).reduce(_ |+| _)
+    val tasks = sample((for (p <- ps; t <- ts) yield configureAndRun(n, p, t, p"5000", p"200")).sequence, gen)
+      .reduce(_ |+| _)
 
     IO {
       println(BLAS.getInstance().getClass.getName)

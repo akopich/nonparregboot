@@ -60,9 +60,13 @@ object Bootstrap {
     iter times sampleBootPredictors(resps) sequence
   }
 
-  def rand[A](as: NEV[A]): Random[A] = rand(size(as)).map(as.toVector(_))
+  def sampleBootPredictors(resp: NEV[Responses]): Random[Responses] = {
+    intVector(size(resp)).map(indxs => average(indxs.map(resp.toVector)))
+  }
 
-  def rand(i: Int): Random[Int] = int.map(math.abs).map(_ % i)
-
-  def sampleBootPredictors(resp: NEV[Responses]): Random[Responses] = average(size(resp) times rand(resp))
+  def intVector(size: Pos): Random[NEV[Int]] = Random { gen =>
+    val arr = Array.ofDim[Int](size)
+    val (newgen, _) = gen(_.fillInts(arr))
+    (newgen, toNEV(arr))
+  }
 }
