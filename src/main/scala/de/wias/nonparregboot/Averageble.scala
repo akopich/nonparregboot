@@ -7,6 +7,7 @@ import cats.kernel.instances.IntGroup
 import NEV._
 import Nat._
 import HeadTailDecomposable._
+import de.wias.random.RandomPure._
 
 
 trait Averageble[T] extends Semigroup[T] { self =>
@@ -50,13 +51,20 @@ object Averageble {
 
   implicit def readerAverageble[A: Averageble, E]: Averageble[Reader[E, A]] = new Averageble[Reader[E, A]] {
     type C[B] = Reader[E, B]
-    override def |/|(fa: C[A], cnt: Pos): C[A] = for {
-      a <- fa
-    } yield a |/| cnt
+    override def |/|(fa: C[A], cnt: Pos): C[A] = fa.map(_ |/| cnt)
 
     override def combine(fx: C[A], fy: C[A]): C[A] = for {
       x <- fx
       y <- fy
+    } yield x |+| y
+  }
+
+  implicit def randomAverageble[A: Averageble] : Averageble[Random[A]] = new Averageble[Random[A]] {
+    override def |/|(x: Random[A], cnt: Pos): Random[A] = x.map(_ |/| cnt)
+
+    override def combine(rx: Random[A], ry: Random[A]): Random[A] = for {
+      x <- rx
+      y <- ry
     } yield x |+| y
   }
 }

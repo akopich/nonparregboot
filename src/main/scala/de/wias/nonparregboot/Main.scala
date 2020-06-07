@@ -40,7 +40,7 @@ object Main extends IOApp {
                               experIter: Pos,
                               checkCoverage: (Pos, EnsemblePredictor,
                                                Covariates, FStarValues
-                                             ) => ExperimentResult
+                                             ) => Random[ExperimentResult]
                              )
 
   implicit val showConf: Show[(ExperimentConfig, (Double, Double))] = {
@@ -63,7 +63,7 @@ object Main extends IOApp {
   def el(rho: Double): Conf[EnsembleLearner] = Reader { conf => KRR.fastKRR(conf.partitions, rho, conf.kernel) }
 
   def run(ep: EnsemblePredictor,
-          t: Covariates, ft: FStarValues): Conf[ExperimentResult] = Reader { conf =>
+          t: Covariates, ft: FStarValues): ConfRandom[ExperimentResult] = ConfRandom { conf =>
     conf.checkCoverage(conf.bootIter, ep, t, ft)
   }
 
@@ -83,22 +83,24 @@ object Main extends IOApp {
     (t, ft) <- targetData
     rho     <- lift(rho)
     el      <- lift(el(rho))
-    result  <- lift(run(el(x, y), t, ft))
+    result  <- run(el(x, y), t, ft)
   } yield result
 
   def checkCoverageBounds(bootIter: Pos,
                           ep: EnsemblePredictor,
-                          t: Covariates, ft: FStarValues): ExperimentResult = {
-      val (that, (l, u)) = predictWithConfidence(bootIter, 0.95, ep, t)
-      (MSE(that, ft), if (between(l, ft, u)) 1d else 0d)
+                          t: Covariates, ft: FStarValues): Random[ExperimentResult] = {
+      val (that, bounds) = predictWithConfidence(bootIter, 0.95, ep, t)
+      bounds.map{ case(l, u) =>
+        (MSE(that, ft), if (between(l, ft, u)) 1d else 0d)
+      }
   }
 
   def checkCoverageBall(bootIter: Pos,
                         ep: EnsemblePredictor,
-                        t: Covariates, ft: FStarValues): ExperimentResult = {
-      val (that, quantile) = predictWithBall(bootIter, 0.95, ep, t)
+                        t: Covariates, ft: FStarValues): Random[ExperimentResult] = {
+      val (that, quantileR) = predictWithBall(bootIter, 0.95, ep, t)
       val mse = MSE(that, ft)
-      (mse, if (mse < quantile) 1d else 0d)
+      quantileR.map{ quantile => (mse, if (mse < quantile) 1d else 0d) }
   }
 
   def configureAndRun(n: Pos, P: Pos, t: Pos, bootIter: Pos, avgIter: Pos): Random[IO[Unit]] = Random { gen =>
