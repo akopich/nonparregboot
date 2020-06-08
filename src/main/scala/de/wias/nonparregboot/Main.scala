@@ -70,10 +70,9 @@ object Main extends IOApp {
     conf.checkCoverage(conf.bootIter, ep, t, ft)
   }
 
-  def averager(once: ConfRandom[ExperimentResult]): ConfRandom[ExperimentResult] = ConfRandom { conf =>
+  def averager(once: ConfRandom[ExperimentResult]): ConfRandom[IO[ExperimentResult]] = ConfRandom { conf =>
     randomSplit(conf.experIter).map { seeds =>
-      val results = seeds.parTraverse(gen => IO { sample(once(conf), gen) } ).unsafeRunSync()
-      average(results)
+      seeds.parTraverse(gen => IO { sample(once(conf), gen) } ).map(nev => average(nev))
     }
   }
 
@@ -112,10 +111,10 @@ object Main extends IOApp {
     val experimentConfig = ExperimentConfig(sampler, n, t, P, 3d, Matern52(1d), bootIter, avgIter, checkCoverageBall)
 
     val (gen1, gen2) = sample(randomSplit, gen)
-    (gen1, IO {
-      val res = sample(averager(runExperiment)(experimentConfig), gen2)
-      println((experimentConfig, res).show)
-    })
+    (gen1, sample(averager(runExperiment)(experimentConfig), gen2). map { res =>
+        println((experimentConfig, res).show)
+      }
+    )
   }
 
   override def run(args: List[String]): IO[ExitCode] = {
