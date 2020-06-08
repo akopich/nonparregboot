@@ -13,44 +13,57 @@ import de.wias.nonparregboot.Bootstrap.predictWithConfidence
 import org.apache.commons.math3.random.MersenneTwister
 import NEV._
 import Nat._
+
 import scala.{Tuple2 => &}
+import de.wias.random.RandomPure._
+import cats._
+import cats.data._
+import cats.effect.{ExitCode, IO, IOApp}
+import cats.implicits._
 
 
-object Plot extends App {
+object Plot extends IOApp {
   def covToDV(xs: Covariates) = xs.map(_(0)).toVector.toDV
 
-  implicit val randBasis: RandBasis = new RandBasis(new ThreadLocalRandomGenerator(new MersenneTwister(13)))
 
-  val xGen : () => Double     = () => {
-    val g = Laplace(0.5, 0.08).sample()
-    if (g >= 0d && g <= 1d) g else xGen()
+  override def run(args: List[String]): IO[ExitCode] = {
+
+    implicit val randBasis: RandBasis = new RandBasis(new ThreadLocalRandomGenerator(new MersenneTwister(13)))
+
+    val xGen: Random[Double] = laplace(0.5, 0.08).iterateUntil(l => l <= 1d && l >= 0d)
+
+    val noiseGen = gaussian(0d, 1d)
+    val fstar: Double => Double = x => sin(x * math.Pi * 2d)
+    val n = p"2048"
+    val P = p"32"
+    val sampler = sampleDataset(xGen, noiseGen, fstar)(n)
+    val targets: Covariates = toNEV(linspace(0d, 1d, length = 10).valuesIterator.map(_.toDV).toVector)
+
+    val s = 3d
+    val rho = 0.001 * math.pow(n.toDouble, -2 * s / (2 * s + 1))
+    val el = fastKRR(P, rho, Matern52(1d))
+
+    val rio: Random[IO[Unit]] = for {
+      (xs, ys, fs) <- sampler
+      (fhat, randomBounds) = predictWithConfidence(p"5000", 0.95, el(xs, ys), targets)
+      (u, l) <- randomBounds
+    } yield IO {
+      val figure = Figure()
+      val p = figure.subplot(0)
+
+
+      p += plot(linspace(0d, 1d), linspace(0d, 1d).map(fstar), colorcode = "blue")
+      p += scatter(DenseVector(-0.05, 1.05), DenseVector(0d, 0d), _ => 0d, colors = _ => Color.RED)
+      p += scatter(covToDV(targets), fhat, _ => 0.01, colors = _ => Color.RED)
+
+      for (t & l & u <- covToDV(targets).toArray.zip(l.toArray).zip(u.toArray)) {
+        p += plot(DenseVector(t, t), DenseVector(l, u), colorcode = "red")
+      }
+
+
+      p += scatter(covToDV(xs), ys, _ => 0.01, colors = _ => Color.WHITE)
+      figure.saveas("/Users/avanesov/pic.pdf")
+    }
+    sample(rio, getGen(13)).as(ExitCode.Success)
   }
-  val noiseGen = () => Gaussian(0d, 1d).sample()
-  val fstar: Double => Double = x => sin(x * math.Pi * 2d)
-  val sampler = sampleDataset(xGen, noiseGen, fstar)
-  val n = p"2048"
-  val P = p"32"
-  val (xs, ys, fs) = sampler(n)
-  val targets : Covariates = toNEV(linspace(0d, 1d, length = 10).valuesIterator.map(_.toDV).toVector)
-
-  val s = 3d
-  val rho = 0.001 * math.pow(n.toDouble, -2 * s / (2 * s + 1))
-  val el = fastKRR(P, rho, Matern52(1d))
-  val (fhat, (l, u)) : (DV, (DV, DV)) = predictWithConfidence(p"5000", 0.95, el(xs, ys), targets)
-
-  val figure = Figure()
-  val p = figure.subplot(0)
-
-
-  p += plot(linspace(0d, 1d), linspace(0d, 1d).map(fstar), colorcode = "blue")
-  p += scatter(DenseVector(-0.05, 1.05), DenseVector(0d, 0d), _ => 0d, colors = _ => Color.RED)
-  p += scatter(covToDV(targets), fhat, _ => 0.01, colors = _ => Color.RED)
-
-  for (t & l & u <- covToDV(targets).toArray.zip(l.toArray).zip(u.toArray)) {
-    p += plot(DenseVector(t, t), DenseVector(l, u), colorcode = "red")
-  }
-
-
-  p += scatter(covToDV(xs), ys, _ => 0.01, colors = _ => Color.WHITE)
-  figure.saveas("/Users/avanesov/pic.pdf")
 }

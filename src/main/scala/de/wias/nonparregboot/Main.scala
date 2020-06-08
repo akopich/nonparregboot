@@ -21,6 +21,7 @@ import spire.random.rng.MersenneTwister64
 import scala.collection.parallel.CollectionConverters._
 import scala.collection.parallel.ParSeq
 import NEV._
+import de.wias.nonparregboot.Main.{averager, runExperiment}
 
 
 object Main extends IOApp {
@@ -68,15 +69,12 @@ object Main extends IOApp {
   }
 
   def averager(once: ConfRandom[ExperimentResult]): ConfRandom[ExperimentResult] = ConfRandom { conf =>
-    val parSeeds: Random[ParSeq[Gen]] = randomSplit(conf.experIter).map(_.par)
-    parSeeds.map(seeds => average(toNEV(seeds.map(gen => sample(once(conf), gen)).seq.toList)))
+    val parSeedsR: Random[ParSeq[Gen]] = randomSplit(conf.experIter).map(_.par)
+    parSeedsR.map(seeds => average(toNEV(seeds.map(gen => sample(once(conf), gen)).seq.toList)))
   }
 
-  def lift[T](k : Kleisli[Id, ExperimentConfig, T]): Kleisli[Random, ExperimentConfig, T] = ConfRandom { conf =>
-    Random { gen =>
-      (gen, k(conf))
-    }
-  }
+  def lift[T](k : Kleisli[Id, ExperimentConfig, T]): Kleisli[Random, ExperimentConfig, T] =
+    k.mapK(λ[Id ~> Random](id => Random { gen => (gen, id) } ))
 
   def runExperiment: ConfRandom[ExperimentResult] = for {
     (x, y)  <- trainData
@@ -103,27 +101,31 @@ object Main extends IOApp {
       quantileR.map{ quantile => (mse, if (mse < quantile) 1d else 0d) }
   }
 
-  def configureAndRun(n: Pos, P: Pos, t: Pos, bootIter: Pos, avgIter: Pos): Random[IO[Unit]] = Random { gen =>
+  def configureAndRun(n: Pos, P: Pos, t: Pos, bootIter: Pos, avgIter: Pos): Random[IO[Unit]] =  {
     val xGen = uniform01
     val noiseGen = gaussian(0d, 1d)
     val sampler = sampleDataset(xGen, noiseGen, x => sin(x * math.Pi * 2d))
     val experimentConfig = ExperimentConfig(sampler, n, t, P, 3d, Matern52(1d), bootIter, avgIter, checkCoverageBall)
-    (gen, IO {
-      val res = sample(averager(runExperiment)(experimentConfig), gen)
-      println((experimentConfig, res).show)
-    })
-  }
 
+    val rGens = randomSplit
+
+    for {
+      (g1, _) <- rGens
+    } yield IO {
+      val res = sample(averager(runExperiment)(experimentConfig), g1)
+      println((experimentConfig, res).show)
+    }
+  }
 
   override def run(args: List[String]): IO[ExitCode] = {
     val functor = implicitly[Functor[List]].compose(implicitly[Functor[List]])
     val ps :: ts :: Nil = functor.map(List(7 to 12 toList, 1 to 9 toList))(mkPos _ >>>  pow(p"2"))
 
-    val gen = new MersenneTwisterImmutable(MersenneTwister64.fromTime(time = 13L))
+    val gen = getGen(13L)
 
     val n : Pos = pow(p"2")(p"16")
-    val tasks = sample((for (p <- ps; t <- ts) yield configureAndRun(n, p, t, p"5000", p"200")).sequence, gen)
-      .reduce(_ |+| _)
+    val iors = for (p <- ps; t <- ts) yield configureAndRun(n, p, t, p"5000", p"200")
+    val tasks = sample(iors.sequence, gen).reduce(_ |+| _)
 
     IO {
       println(BLAS.getInstance().getClass.getName)

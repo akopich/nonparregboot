@@ -1,5 +1,6 @@
 package de.wias.random
 
+import breeze.numerics.log
 import spire.random.Generator
 import cats._
 import cats.data._
@@ -23,15 +24,18 @@ object RandomPure {
 
   type Gen = MersenneTwisterImmutable
   type Random[T] = State[Gen, T]
+  def Random[T]   = State[Gen, T] _
 
   def sample[T](random: Random[T], gen: Gen): T = random.run(gen).value._2
-
-  def Random[T](r: Gen => (Gen, T)): Random[T] = State[Gen, T](r)
 
   def randomSplit(n: Int): Random[List[Gen]] = (0 until n).view.map(_ =>
     for {
       seed <- long
     } yield getGen(seed)).toList.sequence
+
+  def randomSplit: Random[(Gen, Gen)] = randomSplit(2) map {
+    case g1 :: g2 :: Nil => (g1, g2)
+  }
 
   def next(bits: Int): Random[Int] = Random { gen =>
     gen(_.nextBits(bits))
@@ -51,6 +55,12 @@ object RandomPure {
 
   def gaussian(mu: Double, sigma: Double): Random[Double] = Random { gen =>
     gen(_.nextGaussian(mu, sigma))
+  }
+
+  def laplace(location: Double, scale: Double): Random[Double] = uniform01.map { u =>
+    // from numpy
+    if (u < 0.5) location + scale * log(2 * u)
+    else location - scale * log(2 * (1 - u))
   }
 
   def getGen(seed: Long) = new MersenneTwisterImmutable(MersenneTwister64.fromTime(time =  seed))
