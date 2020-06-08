@@ -71,14 +71,3 @@ object RandomPure {
 
   def getGen(seed: Long) = new MersenneTwisterImmutable(MersenneTwister64.fromTime(time =  seed))
 }
-
-object RandomPureExample extends App {
-  import RandomPure._
-  val gen = getGen(13L)
-  for {
-    x <- uniform01
-    y <- uniform01
-  } yield x + y
-//  println((0 until 5).toList.map(_ => nextGaussian(0d, 1d)).sequence.run(gen).value)
-//  println((0 until 5).toList.map(_ => nextGaussian(0d, 1d)).sequence.run(gen).value)
-}

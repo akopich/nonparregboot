@@ -28,6 +28,7 @@ import scala.concurrent.ExecutionContext
 
 object Main extends IOApp {
   type Conf[T] = Reader[ExperimentConfig, T]
+  def Conf[T] = Reader[ExperimentConfig, T] _
 
   type ConfRandom[T] = ReaderT[Random, ExperimentConfig, T]
   def ConfRandom[T](f: ExperimentConfig => Random[T]): ConfRandom[T] = Kleisli(f)
@@ -104,13 +105,22 @@ object Main extends IOApp {
       quantileR.map{ quantile => (mse, if (mse < quantile) 1d else 0d) }
   }
 
-  def configureAndRun(n: Pos, P: Pos, t: Pos, bootIter: Pos, avgIter: Pos): Random[IO[Unit]] =  {
+  def configure(n: Pos, P: Pos, t: Pos, bootIter: Pos, avgIter: Pos): ExperimentConfig =  {
     val xGen = uniform01
     val noiseGen = gaussian(0d, 1d)
     val sampler = sampleDataset(xGen, noiseGen, x => sin(x * math.Pi * 2d))
-    val experimentConfig = ExperimentConfig(sampler, n, t, P, 3d, Matern52(1d), bootIter, avgIter, checkCoverageBall)
-    val functor = implicitly[Functor[Random]] compose implicitly[Functor[IO]]
-    functor.map(averager(runExperiment)(experimentConfig)) { res => println((experimentConfig, res).show) }
+    ExperimentConfig(sampler, n, t, P, 3d, Matern52(1d), bootIter, avgIter, checkCoverageBall)
+  }
+
+  def print(res: IO[ExperimentResult]): Conf[IO[Unit]] = Conf { conf =>
+      res.map(r => println((conf, r).show) )
+  }
+
+  def runAverage: ConfRandom[IO[Unit]] = {
+    for {
+      result <- averager(runExperiment)
+      io     <- lift(print(result))
+    } yield io
   }
 
   override def run(args: List[String]): IO[ExitCode] = {
@@ -120,7 +130,8 @@ object Main extends IOApp {
     val gen = getGen(13L)
 
     val n : Pos = pow(p"2")(p"16")
-    val rios = (for (p <- ps; t <- ts) yield configureAndRun(n, p, t, p"5000", p"200")) sequence
+    val confs = for (p <- ps; t <- ts) yield configure(n, p, t, p"5000", p"200")
+    val rios = confs.map(runAverage(_)).sequence
     val tasks = sample(rios, gen).reduce(_ |+| _)
 
     IO {
