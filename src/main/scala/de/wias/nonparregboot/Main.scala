@@ -104,21 +104,17 @@ object Main extends IOApp {
       quantileR.map{ quantile => (mse, if (mse < quantile) 1d else 0d) }
   }
 
-  def configureAndRun(n: Pos, P: Pos, t: Pos, bootIter: Pos, avgIter: Pos): Random[IO[Unit]] =  Random { gen =>
+  def configureAndRun(n: Pos, P: Pos, t: Pos, bootIter: Pos, avgIter: Pos): Random[IO[Unit]] =  {
     val xGen = uniform01
     val noiseGen = gaussian(0d, 1d)
     val sampler = sampleDataset(xGen, noiseGen, x => sin(x * math.Pi * 2d))
     val experimentConfig = ExperimentConfig(sampler, n, t, P, 3d, Matern52(1d), bootIter, avgIter, checkCoverageBall)
-
-    val (gen1, gen2) = sample(randomSplit, gen)
-    (gen1, sample(averager(runExperiment)(experimentConfig), gen2). map { res =>
-        println((experimentConfig, res).show)
-      }
-    )
+    val functor = implicitly[Functor[Random]] compose implicitly[Functor[IO]]
+    functor.map(averager(runExperiment)(experimentConfig)) { res => println((experimentConfig, res).show) }
   }
 
   override def run(args: List[String]): IO[ExitCode] = {
-    val functor = implicitly[Functor[List]].compose(implicitly[Functor[List]])
+    val functor = implicitly[Functor[List]] compose implicitly[Functor[List]]
     val ps :: ts :: Nil = functor.map(List(7 to 12 toList, 1 to 9 toList))(mkPos _ >>>  pow(p"2"))
 
     val gen = getGen(13L)
