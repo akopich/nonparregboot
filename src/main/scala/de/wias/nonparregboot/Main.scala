@@ -2,9 +2,9 @@ package de.wias.nonparregboot
 
 import breeze.numerics.sin
 import cats._
+import cats.data._
 import cats.implicits._
 import cats.effect._
-import cats.data._
 import com.github.fommil.netlib.BLAS
 import Averageble._
 import Bootstrap._
@@ -22,6 +22,8 @@ import scala.collection.parallel.CollectionConverters._
 import scala.collection.parallel.ParSeq
 import NEV._
 import de.wias.nonparregboot.Main.{averager, runExperiment}
+
+import scala.concurrent.ExecutionContext
 
 
 object Main extends IOApp {
@@ -69,8 +71,10 @@ object Main extends IOApp {
   }
 
   def averager(once: ConfRandom[ExperimentResult]): ConfRandom[ExperimentResult] = ConfRandom { conf =>
-    val parSeedsR: Random[ParSeq[Gen]] = randomSplit(conf.experIter).map(_.par)
-    parSeedsR.map(seeds => average(toNEV(seeds.map(gen => sample(once(conf), gen)).seq.toList)))
+    randomSplit(conf.experIter).map { seeds =>
+      val results = seeds.parTraverse(gen => IO { sample(once(conf), gen) } ).unsafeRunSync()
+      average(results)
+    }
   }
 
   def lift[T](k : Kleisli[Id, ExperimentConfig, T]): Kleisli[Random, ExperimentConfig, T] =
@@ -101,20 +105,17 @@ object Main extends IOApp {
       quantileR.map{ quantile => (mse, if (mse < quantile) 1d else 0d) }
   }
 
-  def configureAndRun(n: Pos, P: Pos, t: Pos, bootIter: Pos, avgIter: Pos): Random[IO[Unit]] =  {
+  def configureAndRun(n: Pos, P: Pos, t: Pos, bootIter: Pos, avgIter: Pos): Random[IO[Unit]] =  Random { gen =>
     val xGen = uniform01
     val noiseGen = gaussian(0d, 1d)
     val sampler = sampleDataset(xGen, noiseGen, x => sin(x * math.Pi * 2d))
     val experimentConfig = ExperimentConfig(sampler, n, t, P, 3d, Matern52(1d), bootIter, avgIter, checkCoverageBall)
 
-    val rGens = randomSplit
-
-    for {
-      (g1, _) <- rGens
-    } yield IO {
-      val res = sample(averager(runExperiment)(experimentConfig), g1)
+    val (gen1, gen2) = sample(randomSplit, gen)
+    (gen1, IO {
+      val res = sample(averager(runExperiment)(experimentConfig), gen2)
       println((experimentConfig, res).show)
-    }
+    })
   }
 
   override def run(args: List[String]): IO[ExitCode] = {
@@ -124,12 +125,11 @@ object Main extends IOApp {
     val gen = getGen(13L)
 
     val n : Pos = pow(p"2")(p"16")
-    val iors = for (p <- ps; t <- ts) yield configureAndRun(n, p, t, p"5000", p"200")
-    val tasks = sample(iors.sequence, gen).reduce(_ |+| _)
+    val rios = (for (p <- ps; t <- ts) yield configureAndRun(n, p, t, p"5000", p"200")) sequence
+    val tasks = sample(rios, gen).reduce(_ |+| _)
 
     IO {
       println(BLAS.getInstance().getClass.getName)
     } |+| tasks
   }.as(ExitCode.Success)
 }
-

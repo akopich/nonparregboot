@@ -5,6 +5,8 @@ import spire.random.Generator
 import cats._
 import cats.data._
 import cats.implicits._
+import de.wias.nonparregboot.Nat._
+import de.wias.nonparregboot.Pos
 import spire.random.rng.MersenneTwister64
 
 import scala.util.Random
@@ -32,6 +34,10 @@ object RandomPure {
     for {
       seed <- long
     } yield getGen(seed)).toList.sequence
+
+  def randomSplit(n: Pos): Random[NonEmptyVector[Gen]] = (n times None).map {_ =>
+    long.map(getGen)
+  } sequence
 
   def randomSplit: Random[(Gen, Gen)] = randomSplit(2) map {
     case g1 :: g2 :: Nil => (g1, g2)
