@@ -1,15 +1,12 @@
 package de.wias.random
 
 import breeze.numerics.log
-import spire.random.Generator
 import cats._
 import cats.data._
 import cats.implicits._
 import de.wias.nonparregboot.Nat._
 import de.wias.nonparregboot.Pos
 import spire.random.rng.MersenneTwister64
-
-import scala.util.Random
 
 class MersenneTwisterImmutable(private val gen: MersenneTwister64) {
   def apply[T](action : MersenneTwister64 => T): (MersenneTwisterImmutable, T) = {
