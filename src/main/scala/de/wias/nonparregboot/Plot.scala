@@ -30,9 +30,9 @@ object Plot extends IOApp {
 
     implicit val randBasis: RandBasis = new RandBasis(new ThreadLocalRandomGenerator(new MersenneTwister(13)))
 
-    val xGen: Random[Double] = laplace(0.5, 0.08).iterateUntil(l => l <= 1d && l >= 0d)
+    val xGen = mixture(laplace(0d, 0.08), laplace(1d, 0.08)).iterateUntil(l => l <= 1d && l >= 0d)
 
-    val noiseGen = gaussian(0d, 1d)
+    val noiseGen = laplace(0d, 1d)
     val fstar: Double => Double = x => sin(x * math.Pi * 2d)
     val n = p"2048"
     val P = p"32"

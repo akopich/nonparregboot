@@ -78,7 +78,7 @@ object Main extends IOApp {
   }
 
   def lift[T](k : Kleisli[Id, ExperimentConfig, T]): Kleisli[Random, ExperimentConfig, T] =
-    k.mapK(λ[Id ~> Random](id => Random { gen => (gen, id) } ))
+    k.mapK(λ[Id ~> Random](_.pure[Random]))
 
   def runExperiment: ConfRandom[ExperimentResult] = for {
     (x, y)  <- trainData
@@ -116,12 +116,10 @@ object Main extends IOApp {
       res.map(r => println((conf, r).show) )
   }
 
-  def runAverage: ConfRandom[IO[Unit]] = {
-    for {
-      result <- averager(runExperiment)
-      io     <- lift(print(result))
-    } yield io
-  }
+  def runAverage: ConfRandom[IO[Unit]] = for {
+    result <- averager(runExperiment)
+    io     <- lift(print(result))
+  } yield io
 
   override def run(args: List[String]): IO[ExitCode] = {
     val functor = implicitly[Functor[List]] compose implicitly[Functor[List]]

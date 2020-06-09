@@ -30,6 +30,12 @@ object RandomPure {
 
   def sample[T](random: Random[T], gen: Gen): T = random.run(gen).value._2
 
+  def mixture[T](ra: Random[T], rb: Random[T]): Random[T] = for {
+    a <- ra
+    b <- rb
+    p <- uniform01
+  } yield if (p > 0.5d) a else b
+
   def randomSplit(n: Int): Random[List[Gen]] = (0 until n).view.map(_ =>
     for {
       seed <- long
@@ -39,19 +45,15 @@ object RandomPure {
     long.map(getGen)
   } sequence
 
-  def randomSplit: Random[(Gen, Gen)] = randomSplit(2) map {
-    case g1 :: g2 :: Nil => (g1, g2)
-  }
-
   def next(bits: Int): Random[Int] = Random { gen =>
     gen(_.nextBits(bits))
   }
 
-  def int: Random[Int] = Random {gen =>
+  def int: Random[Int] = Random { gen =>
     gen(_.nextInt())
   }
 
-  def long: Random[Long] = Random {gen =>
+  def long: Random[Long] = Random { gen =>
     gen(_.nextLong())
   }
 
