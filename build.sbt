@@ -16,6 +16,10 @@ libraryDependencies += "org.typelevel" %% "cats-kernel" % "2.1.1"
 
 libraryDependencies += "org.typelevel" %% "cats-effect" % "2.1.3"
 
+lazy val random = RootProject(uri("https://github.com/akopich/scala_pure_random.git"))
+
+lazy val root = (project in file(".")).dependsOn(random)
+
 libraryDependencies  ++= Seq(
   "org.scalanlp" %% "breeze" % "1.0",
   "org.scalanlp" %% "breeze-natives" % "1.0",

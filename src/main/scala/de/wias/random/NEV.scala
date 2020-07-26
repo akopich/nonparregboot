@@ -1,9 +1,7 @@
-package de.wias.nonparregboot
+package de.wias.random
 
-import cats._
 import cats.data._
-import cats.implicits._
-import Nat._
+import de.wias.nonparregboot.NEV
 
 object NEV {
 

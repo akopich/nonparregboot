@@ -1,12 +1,11 @@
-package de.wias.nonparregboot
+package de.wias.random
 
 import cats._
 import cats.data._
 import cats.implicits._
 import cats.kernel.instances.IntGroup
-import NEV._
-import Nat._
-import HeadTailDecomposable._
+import de.wias.nonparregboot.{DM, DV, NEV}
+import de.wias.random.HeadTailDecomposable._
 import de.wias.random.RandomPure._
 
 
@@ -41,6 +40,12 @@ object Averageble {
     override def |/|(x: DV, cnt: Pos): DV = x / cnt.toDouble
 
     override def combine(x: DV, y: DV): DV = x + y
+  }
+
+  implicit def DMAverageble: Averageble[DM] = new Averageble[DM] {
+    override def |/|(x: DM, cnt: Pos): DM = x / cnt.toDouble
+
+    override def combine(x: DM, y: DM): DM = x + y
   }
 
   implicit def functionAverageble[A, B: Averageble]: Averageble[A => B] = new Averageble[A => B] {

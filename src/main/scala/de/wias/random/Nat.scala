@@ -1,11 +1,7 @@
-package de.wias.nonparregboot
+package de.wias.random
 
-import cats._
 import cats.data._
-import cats.implicits._
 import spire.algebra._
-import spire.math._
-import spire.implicits._
 
 import scala.collection.parallel.CollectionConverters._
 import scala.reflect.ClassTag

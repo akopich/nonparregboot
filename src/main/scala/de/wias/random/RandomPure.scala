@@ -1,11 +1,13 @@
 package de.wias.random
 
+import breeze.linalg._
 import breeze.numerics.log
 import cats._
 import cats.data._
 import cats.implicits._
-import de.wias.nonparregboot.Nat._
-import de.wias.nonparregboot.Pos
+import Nat._
+import de.wias.nonparregboot.{DM, DV}
+import de.wias.random.Averageble._
 import spire.random.rng.MersenneTwister64
 
 class MersenneTwisterImmutable(private val gen: MersenneTwister64) {
@@ -16,16 +18,11 @@ class MersenneTwisterImmutable(private val gen: MersenneTwister64) {
 }
 
 object RandomPure {
-  val multiplier = 0x5DEECE66DL
-  val addend = 0xBL
-  val mask = (1L << 48) - 1
-  val DOUBLE_UNIT = 1.0 / (1L << 53)
-
   type Gen = MersenneTwisterImmutable
   type Random[T] = State[Gen, T]
-  def Random[T]   = State[Gen, T] _
+  def Random[T]  = State[Gen, T] _
 
-  def sample[T](random: Random[T], gen: Gen): T = random.run(gen).value._2
+  def sample[T](random: Random[T], gen: Gen): T = random.runA(gen).value
 
   def mixture[T](ra: Random[T], rb: Random[T]): Random[T] = for {
     a <- ra
@@ -69,4 +66,28 @@ object RandomPure {
   }
 
   def getGen(seed: Long) = new MersenneTwisterImmutable(MersenneTwister64.fromTime(time =  seed))
+
+  def standardGaussian(dim: Int): Random[DV] = Random { gen =>
+    gen(mt => DenseVector.fill(dim)(mt.nextGaussian()))
+  }
+
+  def centeredGaussian(cov: DM): Random[DV] = {
+    val L = cholesky(cov)
+    standardGaussian(cov.rows).map(L * _)
+  }
+
+  def sampleMean[T: Averageble](random: Random[T], n : Pos): Random[T] = (n times None).traverse(_ => random).map(x => average(x))
+
+  def sampleCov(random: Random[DV], n : Pos): Random[DM] = {
+    val samplesR = (n times None).traverse(_ => random)
+    val meanR = samplesR.map(x => average(x))
+    for {
+      s <- samplesR
+      m <- meanR
+    } yield average(s.map { v =>
+      val centered = v - m
+      centered * centered.t
+    })
+  }
 }
+

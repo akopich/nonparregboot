@@ -11,8 +11,9 @@ import ToDV._
 import KRR._
 import de.wias.nonparregboot.Bootstrap.predictWithConfidence
 import org.apache.commons.math3.random.MersenneTwister
-import NEV._
-import Nat._
+import de.wias.random.NEV._
+import de.wias.random.Nat._
+import Bootstrap._
 
 import scala.{Tuple2 => &}
 import de.wias.random.RandomPure._
@@ -27,8 +28,6 @@ object Plot extends IOApp {
 
 
   override def run(args: List[String]): IO[ExitCode] = {
-
-    implicit val randBasis: RandBasis = new RandBasis(new ThreadLocalRandomGenerator(new MersenneTwister(13)))
 
     val xGen = mixture(laplace(0d, 0.08), laplace(1d, 0.08)).iterateUntil(l => l <= 1d && l >= 0d)
 
@@ -45,7 +44,7 @@ object Plot extends IOApp {
 
     val rio: Random[IO[Unit]] = for {
       (xs, ys, fs) <- sampler
-      (fhat, randomBounds) = predictWithConfidence(p"5000", 0.95, el(xs, ys), targets)
+      (fhat, randomBounds) = predictWithConfidence(boot(p"5000", bootAvgOnceWithWeights), 0.95, el(xs, ys), targets)
       (u, l) <- randomBounds
     } yield IO {
       val figure = Figure()

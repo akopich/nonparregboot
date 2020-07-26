@@ -6,9 +6,9 @@ import cats.data._
 import cats.implicits._
 
 import ToDV._
-import NEV._
-import Nat._
-import HeadTailDecomposable._
+import de.wias.random.NEV._
+import de.wias.random.Nat._
+import de.wias.random.HeadTailDecomposable._
 
 object KRR {
   def fastKRR(P: Int, rho: Double, kernel: Kernel): EnsembleLearner = (x: Covariates, y: Responses) => {

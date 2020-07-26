@@ -1,11 +1,12 @@
 package de.wias.nonparregboot
 
 import ToDV._
-import NEV._
+import de.wias.random.NEV._
 import de.wias.random.RandomPure._
 import cats._
 import cats.data._
 import cats.implicits._
+import de.wias.random.Pos
 
 object sampleDataset {
   def apply(xGen:     Random[Double],

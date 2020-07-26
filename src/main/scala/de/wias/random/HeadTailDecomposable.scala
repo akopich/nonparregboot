@@ -1,10 +1,8 @@
-package de.wias.nonparregboot
+package de.wias.random
 
-import de.wias.nonparregboot.Nat.inc
-import Nat._
-import cats._
 import cats.data._
-import cats.implicits._
+import Nat.{inc, mkNat}
+import de.wias.random.Pos
 
 trait HeadTailDecomposable[F[_], G[_]] {
   def decompose[A](f : F[A]): (A, G[A])

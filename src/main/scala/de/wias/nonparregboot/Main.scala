@@ -6,22 +6,22 @@ import cats.data._
 import cats.implicits._
 import cats.effect._
 import com.github.fommil.netlib.BLAS
-import Averageble._
 import Bootstrap._
 import breeze.stats.distributions.{Gaussian, Uniform}
-import Nat._
+import de.wias.random.Nat._
 import cats.arrow.FunctionK
 import de.wias.random.RandomPure._
 import cats.arrow.FunctionK._
 import cats.~>
-import de.wias.random.MersenneTwisterImmutable
+import de.wias.random.Averageble._
 import de.wias.random.RandomPure._
 import spire.random.rng.MersenneTwister64
 
 import scala.collection.parallel.CollectionConverters._
 import scala.collection.parallel.ParSeq
-import NEV._
+import de.wias.random.NEV._
 import de.wias.nonparregboot.Main.{averager, runExperiment}
+import de.wias.random.{Averageble, Pos}
 
 import scala.concurrent.ExecutionContext
 
@@ -41,14 +41,16 @@ object Main extends IOApp {
                               trainSize: Pos, targetSize: Pos, partitions: Pos,
                               s: Double, kernel: Kernel,
                               bootIter: Pos,
+                              bootOnce: NEV[Responses] => Random[Responses],
                               experIter: Pos,
-                              checkCoverage: (Pos, EnsemblePredictor,
+                              checkCoverage: (NEV[Responses] => Random[NEV[Responses]],
+                                               EnsemblePredictor,
                                                Covariates, FStarValues
                                              ) => Random[ExperimentResult]
                              )
 
   implicit val showConf: Show[(ExperimentConfig, (Double, Double))] = {
-    case (ExperimentConfig(_, trainSize, targetSize, partitions, _, _, _, _, _), (rmse, coverage)) =>
+    case (ExperimentConfig(_, trainSize, targetSize, partitions, _, _, _, _, _, _), (rmse, coverage)) =>
       s"n=$trainSize\tt=$targetSize\tP=$partitions\t\trmse=${math.sqrt(rmse)}\tcoverage=$coverage"
   }
 
@@ -68,7 +70,7 @@ object Main extends IOApp {
 
   def run(ep: EnsemblePredictor,
           t: Covariates, ft: FStarValues): ConfRandom[ExperimentResult] = ConfRandom { conf =>
-    conf.checkCoverage(conf.bootIter, ep, t, ft)
+    conf.checkCoverage(boot(conf.bootIter, conf.bootOnce), ep, t, ft)
   }
 
   def averager(once: ConfRandom[ExperimentResult]): ConfRandom[IO[ExperimentResult]] = ConfRandom { conf =>
@@ -88,19 +90,19 @@ object Main extends IOApp {
     result  <- run(el(x, y), t, ft)
   } yield result
 
-  def checkCoverageBounds(bootIter: Pos,
+  def checkCoverageBounds(boot: NEV[Responses] => Random[NEV[Responses]],
                           ep: EnsemblePredictor,
                           t: Covariates, ft: FStarValues): Random[ExperimentResult] = {
-    val (that, bounds) = predictWithConfidence(bootIter, 0.95, ep, t)
+    val (that, bounds) = predictWithConfidence(boot, 0.95, ep, t)
     bounds.map { case(l, u) =>
       (MSE(that, ft), if (between(l, ft, u)) 1d else 0d)
     }
   }
 
-  def checkCoverageBall(bootIter: Pos,
+  def checkCoverageBall(boot: NEV[Responses] => Random[NEV[Responses]],
                         ep: EnsemblePredictor,
                         t: Covariates, ft: FStarValues): Random[ExperimentResult] = {
-      val (that, quantileR) = predictWithBall(bootIter, 0.95, ep, t)
+      val (that, quantileR) = predictWithBall(boot, 0.95, ep, t)
       val mse = MSE(that, ft)
       quantileR.map{ quantile => (mse, if (mse < quantile) 1d else 0d) }
   }
@@ -109,7 +111,7 @@ object Main extends IOApp {
     val xGen = uniform01
     val noiseGen = gaussian(0d, 1d)
     val sampler = sampleDataset(xGen, noiseGen, x => sin(x * math.Pi * 2d))
-    ExperimentConfig(sampler, n, t, P, 3d, Matern52(1d), bootIter, avgIter, checkCoverageBall)
+    ExperimentConfig(sampler, n, t, P, 3d, Matern52(1d), bootIter, bootAvgOnceWithReturn, avgIter, checkCoverageBall)
   }
 
   def print(res: IO[ExperimentResult]): Conf[IO[Unit]] = Conf { conf =>

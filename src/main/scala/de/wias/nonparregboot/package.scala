@@ -1,17 +1,19 @@
 package de.wias
 
-import breeze.linalg.{DenseVector, all}
+import breeze.linalg.{DenseMatrix, DenseVector, all}
 import cats.PartialOrder
 import cats.data.NonEmptyVector
 import cats._
 import cats.data._
 import cats.implicits._
+import de.wias.random.Pos
 import de.wias.random.RandomPure._
 
 package object nonparregboot {
   type NEV[A] = NonEmptyVector[A]
 
   type DV = DenseVector[Double]
+  type DM = DenseMatrix[Double]
 
   type Kernel = (DV, DV) => Double
 
@@ -38,6 +40,8 @@ package object nonparregboot {
   def between(l: DV, m: DV, u: DV): Boolean = l < m && m < u
 
   def ensemblePredict(ep: EnsemblePredictor, x: Covariates): NEV[Responses] = ep.map(_(x))
+
+  def zip[T,U](ts: NEV[T], us: NEV[U]): NEV[(T, U)] = NonEmptyVector((ts.head, us.head), ts.tail.zip(us.tail))
 
   case class NonPositiveToPosException() extends Exception
 }
