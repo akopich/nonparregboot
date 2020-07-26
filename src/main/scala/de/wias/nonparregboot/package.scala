@@ -6,15 +6,9 @@ import cats.data.NonEmptyVector
 import cats._
 import cats.data._
 import cats.implicits._
-import de.wias.random.Pos
-import de.wias.random.RandomPure._
+import scalapurerandom._
 
 package object nonparregboot {
-  type NEV[A] = NonEmptyVector[A]
-
-  type DV = DenseVector[Double]
-  type DM = DenseMatrix[Double]
-
   type Kernel = (DV, DV) => Double
 
   type Covariates = NEV[DV]
@@ -31,7 +25,7 @@ package object nonparregboot {
 
   type EnsembleLearner = (Covariates, Responses) => EnsemblePredictor
 
-  type DataSampler = Pos => Random[(Covariates, Responses, FStarValues)]
+  type DataSampler = PosInt => Random[(Covariates, Responses, FStarValues)]
 
   implicit val partialOrderDV: PartialOrder[DV] =
     (x: DV, y: DV) => if (all(x <:< y)) -1d else

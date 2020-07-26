@@ -1,17 +1,15 @@
 package de.wias.nonparregboot
 
 import ToDV._
-import de.wias.random.NEV._
-import de.wias.random.RandomPure._
 import cats._
 import cats.data._
 import cats.implicits._
-import de.wias.random.Pos
+import scalapurerandom._
 
 object sampleDataset {
   def apply(xGen:     Random[Double],
             noiseGen: Random[Double],
-            fstar: Double => Double): DataSampler = (n: Pos) =>  {
+            fstar: Double => Double): DataSampler = (n: PosInt) =>  {
     val covariatesResponsesFs = n.times { for {
         x   <- xGen
         eps <- noiseGen

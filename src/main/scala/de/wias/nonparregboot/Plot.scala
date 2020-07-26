@@ -11,16 +11,14 @@ import ToDV._
 import KRR._
 import de.wias.nonparregboot.Bootstrap.predictWithConfidence
 import org.apache.commons.math3.random.MersenneTwister
-import de.wias.random.NEV._
-import de.wias.random.Nat._
 import Bootstrap._
 
 import scala.{Tuple2 => &}
-import de.wias.random.RandomPure._
 import cats._
 import cats.data._
 import cats.effect.{ExitCode, IO, IOApp}
 import cats.implicits._
+import scalapurerandom._
 
 
 object Plot extends IOApp {
@@ -39,7 +37,7 @@ object Plot extends IOApp {
     val targets: Covariates = toNEV(linspace(0d, 1d, length = 10).valuesIterator.map(_.toDV).toVector)
 
     val s = 3d
-    val rho = 0.001 * math.pow(n.toDouble, -2 * s / (2 * s + 1))
+    val rho = 0.001 * math.pow(n.toInt, -2 * s / (2 * s + 1))
     val el = fastKRR(P, rho, Matern52(1d))
 
     val rio: Random[IO[Unit]] = for {
@@ -63,6 +61,6 @@ object Plot extends IOApp {
       p += scatter(covToDV(xs), ys, _ => 0.01, colors = _ => Color.WHITE)
       figure.saveas("/Users/avanesov/pic.pdf")
     }
-    sample(rio, getGen(13)).as(ExitCode.Success)
+    rio.sample(getGen(13)).as(ExitCode.Success)
   }
 }

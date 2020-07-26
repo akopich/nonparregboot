@@ -7,24 +7,8 @@ import cats.implicits._
 import cats.effect._
 import com.github.fommil.netlib.BLAS
 import Bootstrap._
-import breeze.stats.distributions.{Gaussian, Uniform}
-import de.wias.random.Nat._
-import cats.arrow.FunctionK
-import de.wias.random.RandomPure._
-import cats.arrow.FunctionK._
 import cats.~>
-import de.wias.random.Averageble._
-import de.wias.random.RandomPure._
-import spire.random.rng.MersenneTwister64
-
-import scala.collection.parallel.CollectionConverters._
-import scala.collection.parallel.ParSeq
-import de.wias.random.NEV._
-import de.wias.nonparregboot.Main.{averager, runExperiment}
-import de.wias.random.{Averageble, Pos}
-
-import scala.concurrent.ExecutionContext
-
+import scalapurerandom._
 
 object Main extends IOApp {
   type Conf[T] = Reader[ExperimentConfig, T]
@@ -38,11 +22,11 @@ object Main extends IOApp {
   implicit def tupleAvg(implicit avg: Averageble[Double]): Averageble[ExperimentResult] = avg.compose(avg)
 
   case class ExperimentConfig(sampler: DataSampler,
-                              trainSize: Pos, targetSize: Pos, partitions: Pos,
+                              trainSize: PosInt, targetSize: PosInt, partitions: PosInt,
                               s: Double, kernel: Kernel,
-                              bootIter: Pos,
+                              bootIter: PosInt,
                               bootOnce: NEV[Responses] => Random[Responses],
-                              experIter: Pos,
+                              experIter: PosInt,
                               checkCoverage: (NEV[Responses] => Random[NEV[Responses]],
                                                EnsemblePredictor,
                                                Covariates, FStarValues
@@ -64,7 +48,7 @@ object Main extends IOApp {
     } yield (t, ft)
   }
 
-  def rho: Conf[Double] = Reader { conf => 0.001 * math.pow(conf.trainSize.toDouble, -2 * conf.s / (2 * conf.s + 1)) }
+  def rho: Conf[Double] = Reader { conf => 0.001 * math.pow(conf.trainSize.toInt, -2 * conf.s / (2 * conf.s + 1)) }
 
   def el(rho: Double): Conf[EnsembleLearner] = Reader { conf => KRR.fastKRR(conf.partitions, rho, conf.kernel) }
 
@@ -75,7 +59,7 @@ object Main extends IOApp {
 
   def averager(once: ConfRandom[ExperimentResult]): ConfRandom[IO[ExperimentResult]] = ConfRandom { conf =>
     randomSplit(conf.experIter).map { seeds =>
-      seeds.parTraverse(gen => IO { sample(once(conf), gen) } ).map(nev => average(nev))
+      seeds.parTraverse(gen => IO { once(conf).sample(gen) } ).map(nev => average(nev))
     }
   }
 
@@ -107,7 +91,7 @@ object Main extends IOApp {
       quantileR.map{ quantile => (mse, if (mse < quantile) 1d else 0d) }
   }
 
-  def configure(n: Pos, P: Pos, t: Pos, bootIter: Pos, avgIter: Pos): ExperimentConfig =  {
+  def configure(n: PosInt, P: PosInt, t: PosInt, bootIter: PosInt, avgIter: PosInt): ExperimentConfig =  {
     val xGen = uniform01
     val noiseGen = gaussian(0d, 1d)
     val sampler = sampleDataset(xGen, noiseGen, x => sin(x * math.Pi * 2d))
@@ -123,16 +107,18 @@ object Main extends IOApp {
     io     <- lift(print(result))
   } yield io
 
+  def pow(base: PosInt)(p: PosInt): PosInt = PosInt(math.pow(base.toInt, p.toInt).toInt)
+
   override def run(args: List[String]): IO[ExitCode] = {
     val functor = implicitly[Functor[List]] compose implicitly[Functor[List]]
-    val ps :: ts :: Nil = functor.map(List(7 to 12 toList, 1 to 9 toList))(mkPos _ >>>  pow(p"2"))
+    val ps :: ts :: Nil = functor.map(List(7 to 12 toList, 1 to 9 toList))(PosInt.apply _ >>>  pow(p"2"))
 
     val gen = getGen(13L)
 
-    val n : Pos = pow(p"2")(p"16")
+    val n : PosInt = pow(p"2")(p"16")
     val confs = for (p <- ps; t <- ts) yield configure(n, p, t, p"5000", p"200")
     val rios = confs.map(runAverage(_)).sequence
-    val tasks = sample(rios, gen).reduce(_ |+| _)
+    val tasks = rios.sample(gen).reduce(_ |+| _)
 
     IO {
       println(BLAS.getInstance().getClass.getName)

@@ -1,6 +1,7 @@
 package de.wias.nonparregboot
 
 import breeze.linalg.DenseVector
+import scalapurerandom._
 
 object ToDV {
   implicit class ToDVWrapper(d: Iterable[Double]) {
