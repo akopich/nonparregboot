@@ -53,14 +53,15 @@ object Main extends IOApp {
   def el(rho: Double): Conf[EnsembleLearner] = Reader { conf => KRR.fastKRR(conf.partitions, rho, conf.kernel) }
 
   def run(ep: EnsemblePredictor,
-          t: Covariates, ft: FStarValues): ConfRandom[ExperimentResult] = ConfRandom { conf =>
+          t: Covariates,
+          ft: FStarValues): ConfRandom[ExperimentResult] = ConfRandom { conf =>
     conf.checkCoverage(boot(conf.bootIter, conf.bootOnce), ep, t, ft)
   }
 
-  def averager(once: ConfRandom[ExperimentResult]): ConfRandom[IO[ExperimentResult]] = ConfRandom { conf =>
-    randomSplit(conf.experIter).map { seeds =>
-      seeds.parTraverse(gen => IO { once(conf).sample(gen) } ).map(nev => average(nev))
-    }
+
+  def averager(once: ConfRandom[ExperimentResult]): ConfRandom[IO[ExperimentResult]] = {
+    val f = Conf { conf => sampleMeanPar(_: Random[ExperimentResult], conf.experIter) }
+    ConfRandom((f <*> Conf(once.run)).run)
   }
 
   def lift[T](k : Kleisli[Id, ExperimentConfig, T]): Kleisli[Random, ExperimentConfig, T] =
@@ -107,15 +108,13 @@ object Main extends IOApp {
     io     <- lift(print(result))
   } yield io
 
-  def pow(base: PosInt)(p: PosInt): PosInt = PosInt(math.pow(base.toInt, p.toInt).toInt)
-
   override def run(args: List[String]): IO[ExitCode] = {
     val functor = implicitly[Functor[List]] compose implicitly[Functor[List]]
-    val ps :: ts :: Nil = functor.map(List(7 to 12 toList, 1 to 9 toList))(PosInt.apply _ >>>  pow(p"2"))
+    val ps :: ts :: Nil = functor.map(List(7 to 12 toList, 1 to 9 toList))(PosInt.apply _ >>>  (pow(p"2", _)))
 
     val gen = getGen(13L)
 
-    val n : PosInt = pow(p"2")(p"16")
+    val n : PosInt = pow(p"2", p"16")
     val confs = for (p <- ps; t <- ts) yield configure(n, p, t, p"5000", p"200")
     val rios = confs.map(runAverage(_)).sequence
     val tasks = rios.sample(gen).reduce(_ |+| _)

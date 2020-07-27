@@ -2,14 +2,9 @@ package de.wias.nonparregboot
 
 import scalapurerandom._
 import breeze.linalg._
-import breeze.numerics._
-import breeze.stats.distributions.{Rand, RandBasis}
-import cats._
-import cats.data._
 import cats.implicits._
 import ToDV._
 import org.apache.commons.math3.stat.descriptive.rank.Percentile
-import de.wias.nonparregboot.Bootstrap.boot
 
 object Bootstrap {
   def predictWithBall(boot: NEV[Responses] => Random[NEV[Responses]],
@@ -38,8 +33,7 @@ object Bootstrap {
         val (l, u) = getBounds(predsSorted, i)
         prob = chanceRejection(preds, l, u)
       } while(prob > alpha)
-      val (u, l) = getBounds(predsSorted, max(0, i - 1))
-      (u, l)
+      getBounds(predsSorted, max(0, i - 1))
     }
     (fhat, bounds)
   }
@@ -65,7 +59,7 @@ object Bootstrap {
   }
 
   def intVector(size: PosInt): Random[NEV[Int]] = Random { gen =>
-    gen(mt => size times mt.nextInt(0, size.dec))
+    gen(mt => size times mt.nextInt(0, size.dec.toInt))
   }
 
   def weightVector(size: PosInt): Random[NEV[Double]] = Random { gen =>
