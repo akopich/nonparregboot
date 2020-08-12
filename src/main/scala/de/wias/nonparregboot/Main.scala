@@ -96,7 +96,7 @@ object Main extends IOApp {
     val xGen = uniform01
     val noiseGen = gaussian(0d, 1d)
     val sampler = sampleDataset(xGen, noiseGen, x => sin(x * math.Pi * 2d))
-    ExperimentConfig(sampler, n, t, P, 3d, Matern52(1d), bootIter, bootAvgOnceWithReturn, avgIter, checkCoverageBall)
+    ExperimentConfig(sampler, n, t, P, 3d, Matern52(1d), bootIter, bootAvgOnceWithReturn, avgIter, checkCoverageBounds)
   }
 
   def print(res: IO[ExperimentResult]): Conf[DV, IO[Unit]] = Conf { conf =>
