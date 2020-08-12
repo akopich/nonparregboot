@@ -22,7 +22,7 @@ import scalapurerandom._
 
 
 object Plot extends IOApp {
-  def covToDV(xs: Covariates) = xs.map(_(0)).toVector.toDV
+  def covToDV(xs: Covariates[DV]) = xs.map(_(0)).toVector.toDV
 
 
   override def run(args: List[String]): IO[ExitCode] = {
@@ -34,7 +34,7 @@ object Plot extends IOApp {
     val n = p"2048"
     val P = p"32"
     val sampler = sampleDataset(xGen, noiseGen, fstar)(n)
-    val targets: Covariates = toNEV(linspace(0d, 1d, length = 10).valuesIterator.map(_.toDV).toVector)
+    val targets: Covariates[DV] = toNEV(linspace(0d, 1d, length = 10).valuesIterator.map(_.toDV).toVector)
 
     val s = 3d
     val rho = 0.001 * math.pow(n.toInt, -2 * s / (2 * s + 1))

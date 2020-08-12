@@ -7,10 +7,10 @@ import ToDV._
 import org.apache.commons.math3.stat.descriptive.rank.Percentile
 
 object Bootstrap {
-  def predictWithBall(boot: NEV[Responses] => Random[NEV[Responses]],
+  def predictWithBall[In](boot: NEV[Responses] => Random[NEV[Responses]],
                       alpha: Double,
-                      ep: EnsemblePredictor,
-                      t: Covariates): (Responses, Random[Double]) = {
+                      ep: EnsemblePredictor[In],
+                      t: Covariates[In]): (Responses, Random[Double]) = {
     val responses = ensemblePredict(ep, t)
     val fhat = average(responses)
     val distances: Random[NEV[Double]] = boot(responses).map(_.map(squaredDistance(_, fhat)))
@@ -18,10 +18,10 @@ object Bootstrap {
     (fhat, quantile)
   }
 
-  def predictWithConfidence(boot: NEV[Responses] => Random[NEV[Responses]],
+  def predictWithConfidence[In](boot: NEV[Responses] => Random[NEV[Responses]],
                             alpha: Double,
-                            ep: EnsemblePredictor,
-                            t: Covariates): (Responses, Random[(DV, DV)]) = {
+                            ep: EnsemblePredictor[In],
+                            t: Covariates[In]): (Responses, Random[(DV, DV)]) = {
     val resps = ensemblePredict(ep, t)
     val fhat = average(resps)
     val bounds: Random[(DV, DV)] = boot(resps).map { preds =>
@@ -63,8 +63,6 @@ object Bootstrap {
   }
 
   def weightVector(size: PosInt): Random[NEV[Double]] = Random { gen =>
-    gen(mt => size times {
-      mt.nextGaussian() + 1d
-    })
+    gen(mt => size times mt.nextGaussian(1d, 1d))
   }
 }

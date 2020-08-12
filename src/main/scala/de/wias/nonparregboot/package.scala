@@ -11,21 +11,21 @@ import scalapurerandom._
 package object nonparregboot {
   type Kernel = (DV, DV) => Double
 
-  type Covariates = NEV[DV]
+  type Covariates[In] = NEV[In]
 
   type Responses = DV
 
   type FStarValues = DV
 
-  type Predictor = Covariates => Responses
+  type Predictor[In] = Covariates[In] => Responses
 
-  type EnsemblePredictor = NEV[Predictor]
+  type EnsemblePredictor[In] = NEV[Predictor[In]]
 
-  type Learner = (Covariates, Responses) => Predictor
+  type Learner[In] = (Covariates[In], Responses) => Predictor[In]
 
-  type EnsembleLearner = (Covariates, Responses) => EnsemblePredictor
+  type EnsembleLearner[In] = (Covariates[In], Responses) => EnsemblePredictor[In]
 
-  type DataSampler = PosInt => Random[(Covariates, Responses, FStarValues)]
+  type DataSampler[In] = PosInt => Random[(Covariates[In], Responses, FStarValues)]
 
   implicit val partialOrderDV: PartialOrder[DV] =
     (x: DV, y: DV) => if (all(x <:< y)) -1d else
@@ -33,7 +33,7 @@ package object nonparregboot {
 
   def between(l: DV, m: DV, u: DV): Boolean = l < m && m < u
 
-  def ensemblePredict(ep: EnsemblePredictor, x: Covariates): NEV[Responses] = ep.map(_(x))
+  def ensemblePredict[In](ep: EnsemblePredictor[In], x: Covariates[In]): NEV[Responses] = ep.map(_(x))
 
   def zip[T,U](ts: NEV[T], us: NEV[U]): NEV[(T, U)] = NonEmptyVector((ts.head, us.head), ts.tail.zip(us.tail))
 
