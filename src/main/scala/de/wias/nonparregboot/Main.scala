@@ -96,7 +96,7 @@ object Main extends IOApp {
     val xGen = uniform01
     val noiseGen = gaussian(0d, 1d)
     val sampler = sampleDataset(xGen, noiseGen, x => sin(x * math.Pi * 2d))
-    ExperimentConfig(sampler, n, t, P, 3d, Matern52(1d), bootIter, bootAvgOnceWithReturn, avgIter, checkCoverageBounds)
+    ExperimentConfig(sampler, n, t, P, 3d, Matern72(1d), bootIter, bootAvgOnceWithReturn, avgIter, checkCoverageBounds)
   }
 
   def print(res: IO[ExperimentResult]): Conf[DV, IO[Unit]] = Conf { conf =>
@@ -110,12 +110,12 @@ object Main extends IOApp {
 
   override def run(args: List[String]): IO[ExitCode] = {
     val functor = implicitly[Functor[List]] compose implicitly[Functor[List]]
-    val ps :: ts :: Nil = functor.map(List(7 to 12 toList, 1 to 9 toList))(PosInt.apply _ >>>  (pow(p"2", _)))
+    val ps :: ts :: Nil = functor.map(List(6 to 12 toList, 1 to 9 toList))(PosInt.apply _ >>>  (pow(p"2", _)))
 
     val gen = getGen(13L)
 
     val n : PosInt = pow(p"2", p"16")
-    val confs = for (p <- ps; t <- ts) yield configure(n, p, t, p"5000", p"200")
+    val confs = for (p <- ps; t <- ts) yield configure(n, p, t, p"3", p"1")
     val rios = confs.map(runAverage(_)).sequence
     val tasks = rios.sample(gen).reduce(_ |+| _)
 
