@@ -35,7 +35,7 @@ object Main extends IOApp {
 
   implicit def showConf[In]: Show[(ExperimentConfig[In], (Double, Double))] = {
     case (ExperimentConfig(_, trainSize, targetSize, partitions, _, _, _, _, _, _), (rmse, coverage)) =>
-      s"n=$trainSize\tt=$targetSize\tP=$partitions\t\trmse=${math.sqrt(rmse)}\tcoverage=$coverage"
+      f"n=${trainSize.toInt}\tt=${targetSize.toInt}\tP=${partitions.toInt}\t\trmse=${math.sqrt(rmse)}%.4f\t\tcoverage=$coverage"
   }
 
   def trainData: ConfRandom[DV, (Covariates[DV], Responses)] = ConfRandom { conf => for {
