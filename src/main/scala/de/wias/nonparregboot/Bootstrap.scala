@@ -18,13 +18,16 @@ object Bootstrap {
     (fhat, quantile)
   }
 
+  def mirror(resps: NEV[Responses], fhat: Responses): NEV[Responses] =
+    resps ++ resps.map { resp => fhat - (resp - fhat)}.toVector
+
   def predictWithConfidence[In](boot: NEV[Responses] => Random[NEV[Responses]],
                             alpha: Double,
                             ep: EnsemblePredictor[In],
                             t: Covariates[In]): (Responses, Random[(DV, DV)]) = {
     val resps = ensemblePredict(ep, t)
     val fhat = average(resps)
-    val bounds: Random[(DV, DV)] = boot(resps).map { preds =>
+    val bounds: Random[(DV, DV)] = boot(mirror(resps, fhat)).map { preds =>
       val predsSorted = preds.map(_.toArray).toVector.transpose.map(_.sorted)
       var i = -1
       var prob = 1d
