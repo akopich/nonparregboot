@@ -37,8 +37,8 @@ object Main extends IOApp {
   implicit def showConf[In]: Show[(ExperimentConfig[In], (Double, Double))] = {
     case (ExperimentConfig(_, trainSize, targetSize, partitions, _, _, _, _, iters, _), (rmse, coverage)) =>
       val interval = IntervalUtils.getWilsonScoreInterval(iters.toInt, (coverage * iters.toInt.toDouble).toInt, 0.95)
-      f"n=${trainSize.toInt}\tt=${targetSize.toInt}\tP=${partitions.toInt}\t\trmse=${math.sqrt(rmse)}%.4f\t\tcoverage=$coverage" +
-        f"\t(${interval.getLowerBound}%.2f, ${interval.getUpperBound}%.2f)"
+      f"n=${trainSize.toInt}\tt=${targetSize.toInt}\tP=${partitions.toInt}\t\trmse=${math.sqrt(rmse)}%.4f\t\tcoverage=${coverage}%.3f" +
+        f"\t(${interval.getLowerBound}%.3f, ${interval.getUpperBound}%.3f)"
   }
 
   def trainData: ConfRandom[DV, (Covariates[DV], Responses)] = ConfRandom { conf => for {
@@ -113,12 +113,12 @@ object Main extends IOApp {
 
   override def run(args: List[String]): IO[ExitCode] = {
     val functor = implicitly[Functor[List]] compose implicitly[Functor[List]]
-    val ps :: ts :: Nil = functor.map(List(6 to 12 toList, 1 to 9 toList))(PosInt.apply _ >>>  (pow(p"2", _)))
+    val ps :: ts :: Nil = functor.map(List(8 to 12 toList, 1 to 9 toList))(PosInt.apply _ >>>  (pow(p"2", _)))
 
     val gen = getGen(13L)
 
     val n : PosInt = pow(p"2", p"16")
-    val confs = for (p <- ps; t <- ts) yield configure(n, p, t, p"5000", p"200")
+    val confs = for (p <- ps; t <- ts) yield configure(n, p, t, p"5000", p"1000")
     val rios = confs.map(runAverage(_)).sequence
     val tasks = rios.sample(gen).reduce(_ |+| _)
 
