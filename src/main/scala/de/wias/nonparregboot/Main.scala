@@ -8,6 +8,7 @@ import cats.effect._
 import com.github.fommil.netlib.BLAS
 import Bootstrap._
 import cats.~>
+import org.apache.commons.math3.stat.interval.{ConfidenceInterval, IntervalUtils}
 import scalapurerandom._
 
 object Main extends IOApp {
@@ -34,8 +35,10 @@ object Main extends IOApp {
                              )
 
   implicit def showConf[In]: Show[(ExperimentConfig[In], (Double, Double))] = {
-    case (ExperimentConfig(_, trainSize, targetSize, partitions, _, _, _, _, _, _), (rmse, coverage)) =>
-      f"n=${trainSize.toInt}\tt=${targetSize.toInt}\tP=${partitions.toInt}\t\trmse=${math.sqrt(rmse)}%.4f\t\tcoverage=$coverage"
+    case (ExperimentConfig(_, trainSize, targetSize, partitions, _, _, _, _, iters, _), (rmse, coverage)) =>
+      val interval = IntervalUtils.getWilsonScoreInterval(iters.toInt, (coverage * iters.toInt.toDouble).toInt, 0.95)
+      f"n=${trainSize.toInt}\tt=${targetSize.toInt}\tP=${partitions.toInt}\t\trmse=${math.sqrt(rmse)}%.4f\t\tcoverage=$coverage" +
+        f"\t(${interval.getLowerBound}%.2f, ${interval.getUpperBound}%.2f)"
   }
 
   def trainData: ConfRandom[DV, (Covariates[DV], Responses)] = ConfRandom { conf => for {
