@@ -1,9 +1,10 @@
 package de.wias.nonparregboot
 
-import scalapurerandom._
+import scalapurerandom.{size, _}
 import breeze.linalg._
 import cats.implicits._
 import ToDV._
+import de.wias.nonparregboot.Bootstrap.intVector
 import org.apache.commons.math3.stat.descriptive.rank.Percentile
 
 object Bootstrap {
@@ -18,16 +19,13 @@ object Bootstrap {
     (fhat, quantile)
   }
 
-  def mirror(resps: NEV[Responses], fhat: Responses): NEV[Responses] =
-    resps ++ resps.map { resp => fhat - (resp - fhat)}.toVector
-
   def predictWithConfidence[In](boot: NEV[Responses] => Random[NEV[Responses]],
                             alpha: Double,
                             ep: EnsemblePredictor[In],
                             t: Covariates[In]): (Responses, Random[(DV, DV)]) = {
     val resps = ensemblePredict(ep, t)
     val fhat = average(resps)
-    val bounds: Random[(DV, DV)] = boot(mirror(resps, fhat)).map { preds =>
+    val bounds: Random[(DV, DV)] = boot(resps).map { preds =>
       val predsSorted = preds.map(_.toArray).toVector.transpose.map(_.sorted)
       var i = -1
       var prob = 1d
@@ -54,7 +52,14 @@ object Bootstrap {
   }
 
   def bootAvgOnceWithReturn(resp: NEV[Responses]): Random[Responses] = {
-    intVector(size(resp)).map(indxs => average(indxs.map(resp.toVector)))
+    val fhat = average(resp)
+    for {
+      indxs <- intVector(size(resp))
+      signs <- boolVector(size(resp))
+    } yield average(indxs.zipWith(signs) { case(indx, sign) =>
+      val r = resp.toVector(indx)
+      if (sign) r else fhat - (r - fhat)
+    })
   }
 
   def bootAvgOnceWithWeights(resp: NEV[Responses]): Random[Responses] = {
@@ -63,6 +68,10 @@ object Bootstrap {
 
   def intVector(size: PosInt): Random[NEV[Int]] = Random { gen =>
     gen(mt => size times mt.nextInt(0, size.dec.toInt))
+  }
+
+  def boolVector(size: PosInt): Random[NEV[Boolean]] = Random { gen =>
+    gen(mt => size times mt.nextBoolean())
   }
 
   def weightVector(size: PosInt): Random[NEV[Double]] = Random { gen =>
