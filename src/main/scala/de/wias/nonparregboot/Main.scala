@@ -41,7 +41,7 @@ object Main extends IOApp {
       val interval99 = IntervalUtils.getWilsonScoreInterval(iters.toInt, cucsesses, 0.99)
       f"n=${trainSize.toInt}\tt=${targetSize.toInt}\tP=${partitions.toInt}\t\trmse=${math.sqrt(rmse)}%.4f\t\tcoverage=${coverage}%.3f" +
         f"\t(${interval95.getLowerBound}%.3f, ${interval95.getUpperBound}%.3f)" +
-        f"\t(${interval99.getLowerBound}%.3f, ${interval99.getUpperBound}%.3f)" +
+        f"\t(${interval99.getLowerBound}%.3f, ${interval99.getUpperBound}%.3f)"
   }
 
   def trainData: ConfRandom[DV, (Covariates[DV], Responses)] = ConfRandom { conf => for {
