@@ -51,7 +51,7 @@ object Bootstrap {
     iter times bootAvgOnce(resps) sequence
   }
 
-  def bootAvgOnceWithReturn(resp: NEV[Responses]): Random[Responses] = {
+  def bootAvgOnceWithReturnWithMirroring(resp: NEV[Responses]): Random[Responses] = {
     val fhat = average(resp)
     for {
       indxs <- intVector(size(resp))
@@ -60,6 +60,12 @@ object Bootstrap {
       val r = resp.toVector(indx)
       if (sign) r else fhat - (r - fhat)
     })
+  }
+
+  def bootAvgOnceWithReturn(resp: NEV[Responses]): Random[Responses] = {
+    for {
+      indxs <- intVector(size(resp))
+    } yield average(indxs.map(resp.toVector))
   }
 
   def bootAvgOnceWithWeights(resp: NEV[Responses]): Random[Responses] = {
