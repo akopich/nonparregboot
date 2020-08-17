@@ -4,7 +4,7 @@ import java.io.File
 
 import cats._
 import cats.data._
-import cats.implicits._
+import cats.implicits.{catsStdShowForDouble => _, _}
 
 import breeze.linalg.linspace
 import breeze.numerics.log2
@@ -48,11 +48,21 @@ object ExperimentResultPlot extends App {
   val groupedByT = results.groupBy(_.t).toList.sortBy(_._1).map{ case(t, rs) => (t, rs.sortBy(_.P)) }
   groupedByT.unzip._2.map(_.map(_.coverage).mkString(", ")).map(s => "[" + s+"]").foreach(println)
 
+
+
+
   implicit val intervalshow = new Show[(Double, Double)] {
-    override def show(t: (Double, Double)): String = f"$$(${t._1}%.2f,${t._2}%.2f)$$"
+    implicit val showDouble = new Show[Double] {
+      override def show(t: Double): String = f"$t%.2f".tail
+    }
+
+    override def show(t: (Double, Double)): String = {
+      val s = s"(${t._1.show},${t._2.show})"
+      if (t._1 <= 0.95 && t._2 >= 0.95) s"$$$s$$" else s"$$\\boldsymbol{$s}$$"
+    }
   }
 
   groupedByT.map {
-    case(ts, results) =>  "$2^" + log2(ts).toInt + "$" + " & " + results.sortBy(_.P).map(_.interval.show).mkString(" & ") + " \\\\ " }.foreach(println)
+    case(ts, results) =>  "$T=2^" + log2(ts).toInt + "$" + " & " + results.sortBy(_.P).map(_.interval.show).mkString(" & ") + " \\\\ " }.foreach(println)
 
 }
