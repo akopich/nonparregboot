@@ -62,11 +62,9 @@ object Bootstrap {
     })
   }
 
-  def bootAvgOnceWithReturn(resp: NEV[Responses]): Random[Responses] = {
-    for {
+  def bootAvgOnceWithReturn(resp: NEV[Responses]): Random[Responses] = for {
       indxs <- intVector(size(resp))
-    } yield average(indxs.map(resp.toVector))
-  }
+  } yield average(indxs.map(resp.toVector))
 
   def bootAvgOnceWithWeights(resp: NEV[Responses]): Random[Responses] = {
     weightVector(size(resp)).map(weights => average(zip(weights, resp).map { case (w, v) => v * w }))
