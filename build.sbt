@@ -26,10 +26,6 @@ libraryDependencies  ++= Seq(
   "org.scalanlp" %% "breeze-viz" % "1.0"
 )
 
-libraryDependencies += "com.github.haifengl" %% "smile-scala" % "2.4.0"
-
-libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" % "0.2.0"
-
 addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full)
 
 libraryDependencies += "org.scalactic" %% "scalactic" % "3.1.2"
