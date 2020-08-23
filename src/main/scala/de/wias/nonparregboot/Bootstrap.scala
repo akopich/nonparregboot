@@ -79,6 +79,6 @@ object Bootstrap {
   }
 
   def weightVector(size: PosInt): Random[NEV[Double]] = Random { gen =>
-    gen(mt => size times mt.nextGaussian(1d, 1d))
+    gen(mt => size times mt.nextInt(2) * 2)
   }
 }
