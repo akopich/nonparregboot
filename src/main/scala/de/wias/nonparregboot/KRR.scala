@@ -5,17 +5,20 @@ import cats._
 import cats.data._
 import cats.implicits._
 import scalapurerandom._
-
 import ToDV._
 
+import scala.Function.tupled
+
 object KRR {
-  def fastKRR(P: PosInt, rho: Double, kernel: Kernel): EnsembleLearner [DV]= (x: Covariates[DV], y: Responses) => {
+  def fastKRR(P: PosInt, rho: Double, kernel: Kernel)(implicit psf: PSFunctor[NEV]): EnsembleLearner[DV] = (x: Covariates[DV], y: Responses) => {
     val chunkSize = PosInt((x.size / P.toInt).toInt)
     val learner = krr(rho, kernel)
 
     val groupedResponses: NEV[Responses] = toNEV(y.toArray.grouped(chunkSize.toInt).map(_.toSeq.toDV).toSeq)
     val groupedCovariates: NEV[Covariates[DV]] = group(x, chunkSize)
-    groupedCovariates.zipWith(groupedResponses)(learner)
+    val grouped: NEV[(Covariates[DV], Responses)] = groupedCovariates.zipWith(groupedResponses) { (x, y) => (x, y) }
+
+    grouped pmap  tupled(learner)
   }
 
   def krr(rho: Double, kernel: Kernel): Learner[DV] = (X: Covariates[DV], Y: Responses) => (Xstar: Covariates[DV]) => {

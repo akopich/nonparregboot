@@ -33,7 +33,8 @@ package object nonparregboot {
 
   def between(l: DV, m: DV, u: DV): Boolean = l < m && m < u
 
-  def ensemblePredict[In](ep: EnsemblePredictor[In], x: Covariates[In]): NEV[Responses] = ep.map(_(x))
+  def ensemblePredict[In](ep: EnsemblePredictor[In], x: Covariates[In])
+                         (implicit psf: PSFunctor[NEV]): NEV[Responses] = (ep: NEV[Predictor[In]]).pmap(_(x))
 
   def zip[T,U](ts: NEV[T], us: NEV[U]): NEV[(T, U)] = NonEmptyVector((ts.head, us.head), ts.tail.zip(us.tail))
 

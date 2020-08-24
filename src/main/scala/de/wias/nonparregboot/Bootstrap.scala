@@ -2,6 +2,9 @@ package de.wias.nonparregboot
 
 import scalapurerandom.{size, _}
 import breeze.linalg._
+
+import cats._
+import cats.data._
 import cats.implicits._
 import ToDV._
 import de.wias.nonparregboot.Bootstrap.intVector
@@ -11,7 +14,7 @@ object Bootstrap {
   def predictWithBall[In](boot: NEV[Responses] => Random[NEV[Responses]],
                       alpha: Double,
                       ep: EnsemblePredictor[In],
-                      t: Covariates[In]): (Responses, Random[Double]) = {
+                      t: Covariates[In])(implicit psf: PSFunctor[NEV]): (Responses, Random[Double]) = {
     val responses = ensemblePredict(ep, t)
     val fhat = average(responses)
     val distances: Random[NEV[Double]] = boot(responses).map(_.map(squaredDistance(_, fhat)))
@@ -22,7 +25,7 @@ object Bootstrap {
   def predictWithConfidence[In](boot: NEV[Responses] => Random[NEV[Responses]],
                             alpha: Double,
                             ep: EnsemblePredictor[In],
-                            t: Covariates[In]): (Responses, Random[(DV, DV)]) = {
+                            t: Covariates[In])(implicit PSFunctor: PSFunctor[NEV]): (Responses, Random[(DV, DV)]) = {
     val resps = ensemblePredict(ep, t)
     val fhat = average(resps)
     val bounds: Random[(DV, DV)] = boot(resps).map { preds =>

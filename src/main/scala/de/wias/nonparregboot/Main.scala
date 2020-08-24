@@ -10,6 +10,7 @@ import Bootstrap._
 import cats.~>
 import org.apache.commons.math3.stat.interval.{ConfidenceInterval, IntervalUtils}
 import scalapurerandom._
+import SeqFunctorInstances._
 
 object Main extends IOApp {
   type Conf[In, T] = Reader[ExperimentConfig[In], T]
@@ -17,6 +18,8 @@ object Main extends IOApp {
 
   type ConfRandom[In, T] = ReaderT[Random, ExperimentConfig[In], T]
   def ConfRandom[In, T](f: ExperimentConfig[In] => Random[T]): ConfRandom[In, T] = Kleisli(f)
+
+  type ConfRandomIO[In, T] = ReaderT[RandomT[IO, *], ExperimentConfig[In], T]
 
   type ExperimentResult = (Double, Double)
 
@@ -65,9 +68,10 @@ object Main extends IOApp {
   }
 
 
-  def averager(once: ConfRandom[DV, ExperimentResult]): ConfRandom[DV, IO[ExperimentResult]] = {
+  def averager(once: ConfRandom[DV, ExperimentResult]): ConfRandomIO[DV, ExperimentResult] = {
     val f = Conf { conf: ExperimentConfig[DV] => sampleMeanPar(_: Random[ExperimentResult], conf.experIter) }
-    ConfRandom((f <*> Conf(once.run)).run)
+    val ff: ExperimentConfig[DV] => RandomT[IO, (Double, Double)] = (f <*> Conf(once.run)).run
+    ReaderT.apply[RandomT[IO, *], ExperimentConfig[DV], (Double, Double)](ff)
   }
 
   def lift[T, In](k : Kleisli[Id, ExperimentConfig[In], T]): Kleisli[Random, ExperimentConfig[In], T] =
@@ -105,14 +109,7 @@ object Main extends IOApp {
     ExperimentConfig(sampler, n, t, P, 3d, Matern72(1d), bootIter, bootAvgOnceWithWeights, avgIter, checkCoverageBounds)
   }
 
-  def print(res: IO[ExperimentResult]): Conf[DV, IO[Unit]] = Conf { conf =>
-      res.map(r => println((conf, r).show) )
-  }
-
-  def runAverage: ConfRandom[DV, IO[Unit]] = for {
-    result <- averager(runExperiment)
-    io     <- lift(print(result))
-  } yield io
+  def runAverage: ConfRandomIO[DV, Unit] = averager(runExperiment).map(_.show)
 
   override def run(args: List[String]): IO[ExitCode] = {
     val functor = implicitly[Functor[List]] compose implicitly[Functor[List]]
@@ -123,10 +120,10 @@ object Main extends IOApp {
     val n : PosInt = pow(p"2", p"16")
     val confs = for (p <- ps; t <- ts) yield configure(n, p, t, p"5000", p"2000")
     val rios = confs.map(runAverage(_)).sequence
-    val tasks = rios.sample(gen).reduce(_ |+| _)
+    val tasks = rios.sample(gen)
 
     IO {
-      println(BLAS.getInstance().getClass.getName)
+      List(println(BLAS.getInstance().getClass.getName))
     } |+| tasks
   }.as(ExitCode.Success)
 }

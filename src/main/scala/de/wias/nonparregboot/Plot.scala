@@ -19,6 +19,7 @@ import cats.data._
 import cats.effect.{ExitCode, IO, IOApp}
 import cats.implicits._
 import scalapurerandom._
+import ParFunctorInstances._
 
 
 object Plot extends IOApp {
@@ -31,8 +32,8 @@ object Plot extends IOApp {
 
     val noiseGen = laplace(0d, 1d)
     val fstar: Double => Double = x => sin(x * math.Pi * 2d)
-    val n = p"2048"
-    val P = p"32"
+    val n = pow(p"2", p"20")
+    val P = pow(p"2", p"7")
     val sampler = sampleDataset(xGen, noiseGen, fstar)(n)
     val targets: Covariates[DV] = toNEV(linspace(0d, 1d, length = 10).valuesIterator.map(_.toDV).toVector)
 
@@ -42,7 +43,7 @@ object Plot extends IOApp {
 
     val rio: Random[IO[Unit]] = for {
       (xs, ys, fs) <- sampler
-      (fhat, randomBounds) = predictWithConfidence(boot(p"5000", bootAvgOnceWithWeights), 0.95, el(xs, ys), targets)
+      (fhat, randomBounds) = predictWithConfidence(boot(p"3", bootAvgOnceWithWeights), 0.95, el(xs, ys), targets)
       (u, l) <- randomBounds
     } yield IO {
       val figure = Figure()
