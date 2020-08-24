@@ -32,7 +32,7 @@ object Plot extends IOApp {
 
     val noiseGen = laplace(0d, 1d)
     val fstar: Double => Double = x => sin(x * math.Pi * 2d)
-    val n = pow(p"2", p"20")
+    val n = pow(p"2", p"14")
     val P = pow(p"2", p"7")
     val sampler = sampleDataset(xGen, noiseGen, fstar)(n)
     val targets: Covariates[DV] = toNEV(linspace(0d, 1d, length = 10).valuesIterator.map(_.toDV).toVector)
@@ -41,11 +41,11 @@ object Plot extends IOApp {
     val rho = 0.001 * math.pow(n.toInt, -2 * s / (2 * s + 1))
     val el = fastKRR(P, rho, Matern52(1d))
 
-    val rio: Random[IO[Unit]] = for {
-      (xs, ys, fs) <- sampler
-      (fhat, randomBounds) = predictWithConfidence(boot(p"3", bootAvgOnceWithWeights), 0.95, el(xs, ys), targets)
+    val rio: RandomT[IO, Unit] = for {
+      (xs, ys, fs) <- sampler.transformF(_.value.pure[IO])
+      (fhat, randomBounds) = predictWithConfidence(bootPar(p"1000", bootAvgOnceWithWeights), 0.95, el(xs, ys), targets)
       (u, l) <- randomBounds
-    } yield IO {
+    } yield {
       val figure = Figure()
       val p = figure.subplot(0)
 

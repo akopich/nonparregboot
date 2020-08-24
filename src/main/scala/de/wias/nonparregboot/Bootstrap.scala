@@ -2,33 +2,33 @@ package de.wias.nonparregboot
 
 import scalapurerandom.{size, _}
 import breeze.linalg._
-
 import cats._
 import cats.data._
 import cats.implicits._
 import ToDV._
+import cats.effect.{ContextShift, IO}
 import de.wias.nonparregboot.Bootstrap.intVector
 import org.apache.commons.math3.stat.descriptive.rank.Percentile
 
 object Bootstrap {
-  def predictWithBall[In](boot: NEV[Responses] => Random[NEV[Responses]],
+  def predictWithBall[In, F[_]: Applicative](boot: NEV[Responses] => RandomT[F, NEV[Responses]],
                       alpha: Double,
                       ep: EnsemblePredictor[In],
-                      t: Covariates[In])(implicit psf: PSFunctor[NEV]): (Responses, Random[Double]) = {
+                      t: Covariates[In])(implicit psf: PSFunctor[NEV]): (Responses, RandomT[F, Double]) = {
     val responses = ensemblePredict(ep, t)
     val fhat = average(responses)
-    val distances: Random[NEV[Double]] = boot(responses).map(_.map(squaredDistance(_, fhat)))
-    val quantile: Random[Double] = distances.map(d =>  new Percentile().evaluate(d.toVector.toArray, alpha * 100) / size(t).toInt)
+    val distances: RandomT[F, NEV[Double]] = boot(responses).map(_.map(squaredDistance(_, fhat)))
+    val quantile: RandomT[F, Double] = distances.map(d =>  new Percentile().evaluate(d.toVector.toArray, alpha * 100) / size(t).toInt)
     (fhat, quantile)
   }
 
-  def predictWithConfidence[In](boot: NEV[Responses] => Random[NEV[Responses]],
+  def predictWithConfidence[In, F[_]: Applicative](boot: NEV[Responses] => RandomT[F, NEV[Responses]],
                             alpha: Double,
                             ep: EnsemblePredictor[In],
-                            t: Covariates[In])(implicit PSFunctor: PSFunctor[NEV]): (Responses, Random[(DV, DV)]) = {
+                            t: Covariates[In])(implicit PSFunctor: PSFunctor[NEV]): (Responses, RandomT[F, (DV, DV)]) = {
     val resps = ensemblePredict(ep, t)
     val fhat = average(resps)
-    val bounds: Random[(DV, DV)] = boot(resps).map { preds =>
+    val bounds: RandomT[F, (DV, DV)] = boot(resps).map { preds =>
       val predsSorted = preds.map(_.toArray).toVector.transpose.map(_.sorted)
       var i = -1
       var prob = 1d
@@ -52,6 +52,12 @@ object Bootstrap {
 
   def boot(iter: PosInt, bootAvgOnce: NEV[Responses] => Random[Responses])(resps : NEV[Responses]): Random[NEV[Responses]] = {
     iter times bootAvgOnce(resps) sequence
+  }
+
+  def bootPar(iter: PosInt, bootAvgOnce: NEV[Responses] => Random[Responses])
+             (resps : NEV[Responses])
+             (implicit contextShift: ContextShift[IO]): RandomT[IO, NEV[Responses]] = {
+    samplePar(bootAvgOnce(resps), iter).map( x => toNEV(x.toList))
   }
 
   def bootAvgOnceWithReturnWithMirroring(resp: NEV[Responses]): Random[Responses] = {

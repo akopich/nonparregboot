@@ -67,7 +67,6 @@ object Main extends IOApp {
     conf.checkCoverage(boot(conf.bootIter, conf.bootOnce), ep, t, ft)
   }
 
-
   def averager(once: ConfRandom[DV, ExperimentResult]): ConfRandomIO[DV, ExperimentResult] = {
     val f = Conf { conf: ExperimentConfig[DV] => sampleMeanPar(_: Random[ExperimentResult], conf.experIter) }
     val ff: ExperimentConfig[DV] => RandomT[IO, (Double, Double)] = (f <*> Conf(once.run)).run
