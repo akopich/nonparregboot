@@ -20,6 +20,7 @@ import cats.effect.{ExitCode, IO, IOApp}
 import cats.implicits._
 import scalapurerandom._
 import ParFunctorInstances._
+import ParReducibleInstance._
 
 
 object Plot extends IOApp {
@@ -60,7 +61,7 @@ object Plot extends IOApp {
 
 
       p += scatter(covToDV(xs), ys, _ => 0.01, colors = _ => Color.WHITE)
-      figure.saveas("/Users/avanesov/pic.pdf")
+      figure.saveas(args.head)
     }
     rio.sample(getGen(13)).as(ExitCode.Success)
   }

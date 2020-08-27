@@ -12,9 +12,10 @@ import org.apache.commons.math3.stat.descriptive.rank.Percentile
 
 object Bootstrap {
   def predictWithBall[In, F[_]: Applicative](boot: NEV[Responses] => RandomT[F, NEV[Responses]],
-                      alpha: Double,
-                      ep: EnsemblePredictor[In],
-                      t: Covariates[In])(implicit psf: PSFunctor[NEV]): (Responses, RandomT[F, Double]) = {
+                                              alpha: Double,
+                                              ep: EnsemblePredictor[In],
+                                              t: Covariates[In])
+                                            (implicit psf: PSFunctor[NEV], psr: PSReducible[NEV]): (Responses, RandomT[F, Double]) = {
     val responses = ensemblePredict(ep, t)
     val fhat = average(responses)
     val distances: RandomT[F, NEV[Double]] = boot(responses).map(_.map(squaredDistance(_, fhat)))
@@ -23,9 +24,10 @@ object Bootstrap {
   }
 
   def predictWithConfidence[In, F[_]: Applicative](boot: NEV[Responses] => RandomT[F, NEV[Responses]],
-                            alpha: Double,
-                            ep: EnsemblePredictor[In],
-                            t: Covariates[In])(implicit PSFunctor: PSFunctor[NEV]): (Responses, RandomT[F, (DV, DV)]) = {
+                                                    alpha: Double,
+                                                    ep: EnsemblePredictor[In],
+                                                    t: Covariates[In])
+                                                  (implicit PSFunctor: PSFunctor[NEV], psr: PSReducible[NEV]): (Responses, RandomT[F, (DV, DV)]) = {
     val resps = ensemblePredict(ep, t)
     val fhat = average(resps)
     val bounds: RandomT[F, (DV, DV)] = boot(resps).map { preds =>
@@ -60,7 +62,7 @@ object Bootstrap {
     samplePar(bootAvgOnce(resps), iter).map( x => toNEV(x.toList))
   }
 
-  def bootAvgOnceWithReturnWithMirroring(resp: NEV[Responses]): Random[Responses] = {
+  def bootAvgOnceWithReturnWithMirroring(resp: NEV[Responses])(implicit psr: PSReducible[NEV]): Random[Responses] = {
     val fhat = average(resp)
     for {
       indxs <- intVector(size(resp))
@@ -71,11 +73,11 @@ object Bootstrap {
     })
   }
 
-  def bootAvgOnceWithReturn(resp: NEV[Responses]): Random[Responses] = for {
+  def bootAvgOnceWithReturn(resp: NEV[Responses])(implicit psr: PSReducible[NEV]): Random[Responses] = for {
       indxs <- intVector(size(resp))
   } yield average(indxs.map(resp.toVector))
 
-  def bootAvgOnceWithWeights(resp: NEV[Responses]): Random[Responses] = {
+  def bootAvgOnceWithWeights(resp: NEV[Responses])(implicit psr: PSReducible[NEV]): Random[Responses] = {
     weightVector(size(resp)).map(weights => average(zip(weights, resp).map { case (w, v) => v * w }))
   }
 

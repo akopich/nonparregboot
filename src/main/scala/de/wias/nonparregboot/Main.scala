@@ -11,6 +11,7 @@ import cats.~>
 import org.apache.commons.math3.stat.interval.{ConfidenceInterval, IntervalUtils}
 import scalapurerandom._
 import SeqFunctorInstances._
+import SeqReducibleInstance._
 
 object Main extends IOApp {
   type Conf[In, T] = Reader[ExperimentConfig[In], T]
