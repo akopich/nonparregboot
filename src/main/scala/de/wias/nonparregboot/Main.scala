@@ -104,12 +104,19 @@ object Main extends IOApp {
 
   def configure(n: PosInt, P: PosInt, t: PosInt, bootIter: PosInt, avgIter: PosInt): ExperimentConfig[DV] =  {
     val xGen = uniform01
-    val noiseGen = gaussian(0d, 1d)
+    val noiseGen = (_: Double) => gaussian(0d, 1d)
     val sampler = sampleDataset(xGen, noiseGen, x => sin(x * math.Pi * 2d))
     ExperimentConfig(sampler, n, t, P, 3d, Matern72(1d), bootIter, bootAvgOnceWithWeights, avgIter, checkCoverageBounds)
   }
 
-  def runAverage: ConfRandomIO[DV, Unit] = averager(runExperiment).map(_.show)
+  def print(res: ExperimentResult): ConfRandomIO[DV, Unit] = ReaderT { conf =>
+    fromState(IO { println((conf, res).show) }.pure[Random])
+  }
+
+  def runAverage: ConfRandomIO[DV, Unit] = for {
+    result <- averager(runExperiment)
+    io <- print(result)
+  } yield io
 
   override def run(args: List[String]): IO[ExitCode] = {
     val functor = implicitly[Functor[List]] compose implicitly[Functor[List]]
@@ -118,7 +125,7 @@ object Main extends IOApp {
     val gen = getGen(13L)
 
     val n : PosInt = pow(p"2", p"16")
-    val confs = for (p <- ps; t <- ts) yield configure(n, p, t, p"5000", p"2000")
+    val confs = for (p <- ps; t <- ts) yield configure(n, p, t, p"5000", p"200")
     val rios = confs.map(runAverage(_)).sequence
     val tasks = rios.sample(gen)
 

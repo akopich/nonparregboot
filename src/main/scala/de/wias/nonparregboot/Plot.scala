@@ -4,7 +4,7 @@ package de.wias.nonparregboot
 import java.awt.Color
 
 import breeze.linalg._
-import breeze.numerics.sin
+import breeze.numerics.{abs, sin}
 import breeze.plot._
 import breeze.stats.distributions.{Gaussian, Laplace, RandBasis, ThreadLocalRandomGenerator, Uniform}
 import ToDV._
@@ -29,9 +29,8 @@ object Plot extends IOApp {
 
   override def run(args: List[String]): IO[ExitCode] = {
 
-    val xGen = mixture(laplace(0d, 0.08), laplace(1d, 0.08)).iterateUntil(l => l <= 1d && l >= 0d)
-
-    val noiseGen = laplace(0d, 1d)
+    val xGen = uniform01
+    val noiseGen = (x: Double) => gaussian(0d, 1d * Math.exp(abs(Math.pow(x - 0.5, 2d)) ) )
     val fstar: Double => Double = x => sin(x * math.Pi * 2d)
     val n = pow(p"2", p"14")
     val P = pow(p"2", p"7")
@@ -59,10 +58,9 @@ object Plot extends IOApp {
         p += plot(DenseVector(t, t), DenseVector(l, u), colorcode = "red")
       }
 
-
-      p += scatter(covToDV(xs), ys, _ => 0.01, colors = _ => Color.WHITE)
+//      p += scatter(covToDV(xs), ys, _ => 0.01, colors = _ => Color.WHITE)
       figure.saveas(args.head)
     }
-    rio.sample(getGen(13)).as(ExitCode.Success)
+    rio.sample(getGen(103)).as(ExitCode.Success)
   }
 }
