@@ -125,7 +125,7 @@ object Main extends IOApp {
     val gen = getGen(13L)
 
     val n : PosInt = pow(p"2", p"16")
-    val confs = for (p <- ps; t <- ts) yield configure(n, p, t, p"5000", p"200")
+    val confs = for (p <- ps; t <- ts) yield configure(n, p, t, p"5000", p"1000")
     val rios = confs.map(runAverage(_)).sequence
     val tasks = rios.sample(gen)
 
