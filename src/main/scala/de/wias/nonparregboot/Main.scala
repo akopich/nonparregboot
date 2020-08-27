@@ -1,6 +1,6 @@
 package de.wias.nonparregboot
 
-import breeze.numerics.sin
+import breeze.numerics.{abs, sin}
 import cats._
 import cats.data._
 import cats.implicits._
@@ -104,9 +104,9 @@ object Main extends IOApp {
 
   def configure(n: PosInt, P: PosInt, t: PosInt, bootIter: PosInt, avgIter: PosInt): ExperimentConfig[DV] =  {
     val xGen = uniform01
-    val noiseGen = (_: Double) => gaussian(0d, 1d)
+    val noiseGen = (x: Double) => gaussian(0d, Math.exp(Math.pow(x - 0.5, 2d)))
     val sampler = sampleDataset(xGen, noiseGen, x => sin(x * math.Pi * 2d))
-    ExperimentConfig(sampler, n, t, P, 3d, Matern72(1d), bootIter, bootAvgOnceWithWeights, avgIter, checkCoverageBounds)
+    ExperimentConfig(sampler, n, t, P, 3d, Matern72(1d), bootIter, bootAvgOnceWithReturn, avgIter, checkCoverageBounds)
   }
 
   def print(res: ExperimentResult): ConfRandomIO[DV, Unit] = ReaderT { conf =>
