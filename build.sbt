@@ -4,7 +4,8 @@ version := "0.1"
 
 scalaVersion := "2.13.2"
 
-scalacOptions ++= Seq("-deprecation", "-feature", "-language:postfixOps", "-language:implicitConversions")
+scalacOptions ++= Seq("-deprecation", "-feature", "-language:postfixOps", "-language:implicitConversions",
+  "-language:higherKinds", "-Ymacro-annotations")
 
 addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1")
 
@@ -25,10 +26,6 @@ libraryDependencies  ++= Seq(
   "org.scalanlp" %% "breeze-natives" % "1.0",
   "org.scalanlp" %% "breeze-viz" % "1.0"
 )
-
-libraryDependencies += "com.github.haifengl" %% "smile-scala" % "2.4.0"
-
-libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" % "0.2.0"
 
 addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full)
 

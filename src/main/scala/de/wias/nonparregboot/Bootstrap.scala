@@ -2,30 +2,35 @@ package de.wias.nonparregboot
 
 import scalapurerandom.{size, _}
 import breeze.linalg._
+import cats._
+import cats.data._
 import cats.implicits._
 import ToDV._
+import cats.effect.{ContextShift, IO}
 import de.wias.nonparregboot.Bootstrap.intVector
 import org.apache.commons.math3.stat.descriptive.rank.Percentile
 
 object Bootstrap {
-  def predictWithBall[In](boot: NEV[Responses] => Random[NEV[Responses]],
-                      alpha: Double,
-                      ep: EnsemblePredictor[In],
-                      t: Covariates[In]): (Responses, Random[Double]) = {
+  def predictWithBall[In, F[_]: Applicative](boot: NEV[Responses] => RandomT[F, NEV[Responses]],
+                                              alpha: Double,
+                                              ep: EnsemblePredictor[In],
+                                              t: Covariates[In])
+                                            (implicit psf: PSFunctor[NEV], psr: PSReducible[NEV]): (Responses, RandomT[F, Double]) = {
     val responses = ensemblePredict(ep, t)
     val fhat = average(responses)
-    val distances: Random[NEV[Double]] = boot(responses).map(_.map(squaredDistance(_, fhat)))
-    val quantile: Random[Double] = distances.map(d =>  new Percentile().evaluate(d.toVector.toArray, alpha * 100) / size(t).toInt)
+    val distances: RandomT[F, NEV[Double]] = boot(responses).map(_.map(squaredDistance(_, fhat)))
+    val quantile: RandomT[F, Double] = distances.map(d =>  new Percentile().evaluate(d.toVector.toArray, alpha * 100) / size(t).toInt)
     (fhat, quantile)
   }
 
-  def predictWithConfidence[In](boot: NEV[Responses] => Random[NEV[Responses]],
-                            alpha: Double,
-                            ep: EnsemblePredictor[In],
-                            t: Covariates[In]): (Responses, Random[(DV, DV)]) = {
+  def predictWithConfidence[In, F[_]: Applicative](boot: NEV[Responses] => RandomT[F, NEV[Responses]],
+                                                    alpha: Double,
+                                                    ep: EnsemblePredictor[In],
+                                                    t: Covariates[In])
+                                                  (implicit PSFunctor: PSFunctor[NEV], psr: PSReducible[NEV]): (Responses, RandomT[F, (DV, DV)]) = {
     val resps = ensemblePredict(ep, t)
     val fhat = average(resps)
-    val bounds: Random[(DV, DV)] = boot(resps).map { preds =>
+    val bounds: RandomT[F, (DV, DV)] = boot(resps).map { preds =>
       val predsSorted = preds.map(_.toArray).toVector.transpose.map(_.sorted)
       var i = -1
       var prob = 1d
@@ -51,7 +56,13 @@ object Bootstrap {
     iter times bootAvgOnce(resps) sequence
   }
 
-  def bootAvgOnceWithReturnWithMirroring(resp: NEV[Responses]): Random[Responses] = {
+  def bootPar(iter: PosInt, bootAvgOnce: NEV[Responses] => Random[Responses])
+             (resps : NEV[Responses])
+             (implicit contextShift: ContextShift[IO]): RandomT[IO, NEV[Responses]] = {
+    samplePar(bootAvgOnce(resps), iter).map( x => toNEV(x.toList))
+  }
+
+  def bootAvgOnceWithReturnWithMirroring(resp: NEV[Responses])(implicit psr: PSReducible[NEV]): Random[Responses] = {
     val fhat = average(resp)
     for {
       indxs <- intVector(size(resp))
@@ -62,11 +73,11 @@ object Bootstrap {
     })
   }
 
-  def bootAvgOnceWithReturn(resp: NEV[Responses]): Random[Responses] = for {
+  def bootAvgOnceWithReturn(resp: NEV[Responses])(implicit psr: PSReducible[NEV]): Random[Responses] = for {
       indxs <- intVector(size(resp))
   } yield average(indxs.map(resp.toVector))
 
-  def bootAvgOnceWithWeights(resp: NEV[Responses]): Random[Responses] = {
+  def bootAvgOnceWithWeights(resp: NEV[Responses])(implicit psr: PSReducible[NEV]): Random[Responses] = {
     weightVector(size(resp)).map(weights => average(zip(weights, resp).map { case (w, v) => v * w }))
   }
 
@@ -79,6 +90,6 @@ object Bootstrap {
   }
 
   def weightVector(size: PosInt): Random[NEV[Double]] = Random { gen =>
-    gen(mt => size times mt.nextGaussian(1d, 1d))
+    gen(mt => size times mt.nextInt(2) * 2)
   }
 }

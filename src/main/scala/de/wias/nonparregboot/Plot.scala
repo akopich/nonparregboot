@@ -4,7 +4,7 @@ package de.wias.nonparregboot
 import java.awt.Color
 
 import breeze.linalg._
-import breeze.numerics.sin
+import breeze.numerics.{abs, sin}
 import breeze.plot._
 import breeze.stats.distributions.{Gaussian, Laplace, RandBasis, ThreadLocalRandomGenerator, Uniform}
 import ToDV._
@@ -19,6 +19,8 @@ import cats.data._
 import cats.effect.{ExitCode, IO, IOApp}
 import cats.implicits._
 import scalapurerandom._
+import ParFunctorInstances._
+import ParReducibleInstance._
 
 
 object Plot extends IOApp {
@@ -27,12 +29,11 @@ object Plot extends IOApp {
 
   override def run(args: List[String]): IO[ExitCode] = {
 
-    val xGen = mixture(laplace(0d, 0.08), laplace(1d, 0.08)).iterateUntil(l => l <= 1d && l >= 0d)
-
-    val noiseGen = laplace(0d, 1d)
+    val xGen = uniform01
+    val noiseGen = (x: Double) => gaussian(0d, 1d * Math.exp(abs(Math.pow(x - 0.5, 2d)) ) )
     val fstar: Double => Double = x => sin(x * math.Pi * 2d)
-    val n = p"2048"
-    val P = p"32"
+    val n = pow(p"2", p"14")
+    val P = pow(p"2", p"7")
     val sampler = sampleDataset(xGen, noiseGen, fstar)(n)
     val targets: Covariates[DV] = toNEV(linspace(0d, 1d, length = 10).valuesIterator.map(_.toDV).toVector)
 
@@ -40,11 +41,11 @@ object Plot extends IOApp {
     val rho = 0.001 * math.pow(n.toInt, -2 * s / (2 * s + 1))
     val el = fastKRR(P, rho, Matern52(1d))
 
-    val rio: Random[IO[Unit]] = for {
-      (xs, ys, fs) <- sampler
-      (fhat, randomBounds) = predictWithConfidence(boot(p"5000", bootAvgOnceWithWeights), 0.95, el(xs, ys), targets)
+    val rio: RandomT[IO, Unit] = for {
+      (xs, ys, fs) <- sampler.transformF(_.value.pure[IO])
+      (fhat, randomBounds) = predictWithConfidence(bootPar(p"1000", bootAvgOnceWithWeights), 0.95, el(xs, ys), targets)
       (u, l) <- randomBounds
-    } yield IO {
+    } yield {
       val figure = Figure()
       val p = figure.subplot(0)
 
@@ -57,10 +58,9 @@ object Plot extends IOApp {
         p += plot(DenseVector(t, t), DenseVector(l, u), colorcode = "red")
       }
 
-
-      p += scatter(covToDV(xs), ys, _ => 0.01, colors = _ => Color.WHITE)
-      figure.saveas("/Users/avanesov/pic.pdf")
+//      p += scatter(covToDV(xs), ys, _ => 0.01, colors = _ => Color.WHITE)
+      figure.saveas(args.head)
     }
-    rio.sample(getGen(13)).as(ExitCode.Success)
+    rio.sample(getGen(103)).as(ExitCode.Success)
   }
 }

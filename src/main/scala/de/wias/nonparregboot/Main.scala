@@ -1,6 +1,6 @@
 package de.wias.nonparregboot
 
-import breeze.numerics.sin
+import breeze.numerics.{abs, sin}
 import cats._
 import cats.data._
 import cats.implicits._
@@ -10,6 +10,8 @@ import Bootstrap._
 import cats.~>
 import org.apache.commons.math3.stat.interval.{ConfidenceInterval, IntervalUtils}
 import scalapurerandom._
+import SeqFunctorInstances._
+import SeqReducibleInstance._
 
 object Main extends IOApp {
   type Conf[In, T] = Reader[ExperimentConfig[In], T]
@@ -17,6 +19,8 @@ object Main extends IOApp {
 
   type ConfRandom[In, T] = ReaderT[Random, ExperimentConfig[In], T]
   def ConfRandom[In, T](f: ExperimentConfig[In] => Random[T]): ConfRandom[In, T] = Kleisli(f)
+
+  type ConfRandomIO[In, T] = ReaderT[RandomT[IO, *], ExperimentConfig[In], T]
 
   type ExperimentResult = (Double, Double)
 
@@ -64,10 +68,10 @@ object Main extends IOApp {
     conf.checkCoverage(boot(conf.bootIter, conf.bootOnce), ep, t, ft)
   }
 
-
-  def averager(once: ConfRandom[DV, ExperimentResult]): ConfRandom[DV, IO[ExperimentResult]] = {
+  def averager(once: ConfRandom[DV, ExperimentResult]): ConfRandomIO[DV, ExperimentResult] = {
     val f = Conf { conf: ExperimentConfig[DV] => sampleMeanPar(_: Random[ExperimentResult], conf.experIter) }
-    ConfRandom((f <*> Conf(once.run)).run)
+    val ff: ExperimentConfig[DV] => RandomT[IO, (Double, Double)] = (f <*> Conf(once.run)).run
+    ReaderT.apply[RandomT[IO, *], ExperimentConfig[DV], (Double, Double)](ff)
   }
 
   def lift[T, In](k : Kleisli[Id, ExperimentConfig[In], T]): Kleisli[Random, ExperimentConfig[In], T] =
@@ -100,33 +104,33 @@ object Main extends IOApp {
 
   def configure(n: PosInt, P: PosInt, t: PosInt, bootIter: PosInt, avgIter: PosInt): ExperimentConfig[DV] =  {
     val xGen = uniform01
-    val noiseGen = gaussian(0d, 1d)
+    val noiseGen = (x: Double) => gaussian(0d, Math.exp(Math.pow(x - 0.5, 2d)))
     val sampler = sampleDataset(xGen, noiseGen, x => sin(x * math.Pi * 2d))
     ExperimentConfig(sampler, n, t, P, 3d, Matern72(1d), bootIter, bootAvgOnceWithReturn, avgIter, checkCoverageBounds)
   }
 
-  def print(res: IO[ExperimentResult]): Conf[DV, IO[Unit]] = Conf { conf =>
-      res.map(r => println((conf, r).show) )
+  def print(res: ExperimentResult): ConfRandomIO[DV, Unit] = ReaderT { conf =>
+    fromState(IO { println((conf, res).show) }.pure[Random])
   }
 
-  def runAverage: ConfRandom[DV, IO[Unit]] = for {
+  def runAverage: ConfRandomIO[DV, Unit] = for {
     result <- averager(runExperiment)
-    io     <- lift(print(result))
+    io <- print(result)
   } yield io
 
   override def run(args: List[String]): IO[ExitCode] = {
     val functor = implicitly[Functor[List]] compose implicitly[Functor[List]]
-    val ps :: ts :: Nil = functor.map(List(6 to 12 toList, 1 to 9 toList))(PosInt.apply _ >>>  (pow(p"2", _)))
+    val ps :: ts :: Nil = functor.map(List(8 to 12 toList, 1 to 9 toList))(PosInt.apply _ >>>  (pow(p"2", _)))
 
     val gen = getGen(13L)
 
     val n : PosInt = pow(p"2", p"16")
     val confs = for (p <- ps; t <- ts) yield configure(n, p, t, p"5000", p"1000")
     val rios = confs.map(runAverage(_)).sequence
-    val tasks = rios.sample(gen).reduce(_ |+| _)
+    val tasks = rios.sample(gen)
 
     IO {
-      println(BLAS.getInstance().getClass.getName)
+      List(println(BLAS.getInstance().getClass.getName))
     } |+| tasks
   }.as(ExitCode.Success)
 }

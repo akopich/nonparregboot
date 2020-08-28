@@ -8,11 +8,11 @@ import scalapurerandom._
 
 object sampleDataset {
   def apply(xGen:     Random[Double],
-            noiseGen: Random[Double],
-            fstar: Double => Double): DataSampler[DV] = (n: PosInt) =>  {
+            noiseGen: Double => Random[Double],
+            fstar:    Double => Double): DataSampler[DV] = (n: PosInt) =>  {
     val covariatesResponsesFs = n.times { for {
         x   <- xGen
-        eps <- noiseGen
+        eps <- noiseGen(x)
       } yield {
         val f = fstar(x)
         val y = f + eps
