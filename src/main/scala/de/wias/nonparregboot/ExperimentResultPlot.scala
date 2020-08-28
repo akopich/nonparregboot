@@ -29,7 +29,7 @@ object ExperimentResultPlot extends App {
   }
 
   def parse(s: String) = {
-    val split = s.split("\\s+")
+    val split = s.split("\\t+")
     val t = getInt(split(1))
     val P = getInt(split(2))
     val rmse = getDouble(split(3))

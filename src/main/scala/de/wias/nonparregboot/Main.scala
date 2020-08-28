@@ -104,7 +104,7 @@ object Main extends IOApp {
 
   def configure(n: PosInt, P: PosInt, t: PosInt, bootIter: PosInt, avgIter: PosInt): ExperimentConfig[DV] =  {
     val xGen = uniform01
-    val noiseGen = (x: Double) => gaussian(0d, Math.exp(Math.pow(x - 0.5, 2d)))
+    val noiseGen = (x: Double) => gaussian(0d, Math.exp(2d * Math.abs(x - 0.5)))
     val sampler = sampleDataset(xGen, noiseGen, x => sin(x * math.Pi * 2d))
     ExperimentConfig(sampler, n, t, P, 3d, Matern72(1d), bootIter, bootAvgOnceWithReturn, avgIter, checkCoverageBounds)
   }
