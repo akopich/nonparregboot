@@ -130,7 +130,8 @@ object Main extends IOApp {
     val tasks = rios.sample(gen)
 
     IO {
-      List(println(BLAS.getInstance().getClass.getName))
+      System.getProperty("java.library.path").split(':').map(println).toList :+
+           println(BLAS.getInstance().getClass.getName)
     } |+| tasks
   }.as(ExitCode.Success)
 }
