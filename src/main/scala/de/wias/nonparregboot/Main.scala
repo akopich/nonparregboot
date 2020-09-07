@@ -120,7 +120,7 @@ object Main extends IOApp {
 
   override def run(args: List[String]): IO[ExitCode] = {
     val functor = implicitly[Functor[List]] compose implicitly[Functor[List]]
-    val ps :: ts :: Nil = functor.map(List(8 to 12 toList, 1 to 9 toList))(PosInt.apply _ >>>  (pow(p"2", _)))
+    val ps :: ts :: Nil = functor.map(List(6 to 7 toList, 1 to 9 toList))(PosInt.apply _ >>>  (pow(p"2", _)))
 
     val gen = getGen(13L)
 
