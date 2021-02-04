@@ -31,7 +31,7 @@ object KRR {
     mean
   }
 
-  private def getK(X: Covariates[DV], X1:Covariates[DV], kernel: Kernel) = {
+  private[nonparregboot] def getK(X: Covariates[DV], X1:Covariates[DV], kernel: Kernel) = {
     val K = DenseMatrix.zeros[Double](X.length, X1.length)
 
     for ((a, i) <- X.toVector.view.zipWithIndex; (b, j) <- X1.toVector.view.zipWithIndex) {

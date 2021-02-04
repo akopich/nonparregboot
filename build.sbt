@@ -32,3 +32,5 @@ addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVers
 libraryDependencies += "org.scalactic" %% "scalactic" % "3.1.2"
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.1.2" % "test"
+
+libraryDependencies += "org.slf4j" % "slf4j-simple" % "1.7.30" % Test
