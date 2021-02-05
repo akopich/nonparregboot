@@ -2,6 +2,7 @@ package de.wias.nonparregboot.classifier
 
 import breeze.linalg._
 import breeze.numerics.{exp, _}
+import breeze.optimize.FirstOrderMinimizer.{FunctionValuesConverged, GradientConverged, ProjectedStepConverged}
 import breeze.optimize.{DiffFunction, FirstOrderMinimizer, LBFGS}
 import breeze.plot.{Figure, plot, scatter}
 import com.github.fommil.netlib.BLAS
@@ -54,19 +55,27 @@ object KernelRidgeClassifier {
     (loss, grad)
   }
 
-  def krc(lambda: Double, kernel: Kernel): ClassifierTrainer[DV] = (X: Covariates[DV], Y: Classes) => {
+  def krc(lambda: Double,
+          kernel: Kernel,
+          optimizer: Optimizer,
+          init: DV): ClassifierTrainer[DV] = (X: Covariates[DV], Y: Classes) => {
     val m = Y.maximum + 1
     val n = X.length
     val K = getK(X, X, kernel)
     val loss = diffFunction(Y, K, lambda, m)
-    val alpha = DenseVector[Double](breeze.stats.distributions.Gaussian(0, 1).sample(n * m): _*)
-    val alphaStarVec = new LBFGS[DV](FirstOrderMinimizer.defaultConvergenceCheck[DV](-1, 1e-3), 7).minimize(loss, alpha)
-    val alphaStar =  new DenseMatrix[Double](n, m, alphaStarVec.data, 0)
-    (Xstar: Covariates[DV]) => {
-      val Kstar = getK(Xstar, X, kernel)
-      val scores = Kstar * alphaStar
-      toNEV((0 until Xstar.length).map(i => chooseClass(scores(i, ::).t)))
+    val optimalState = optimizer.minimizeAndReturnState(loss, init)
+    val isConvergenceAchieved = optimalState.convergenceReason.exists {
+      case FunctionValuesConverged | GradientConverged | ProjectedStepConverged => true
+      case _ => false
     }
+    if (isConvergenceAchieved) {
+      val alphaStar = new DenseMatrix[Double](n, m, optimalState.x.data, 0)
+      Right((Xstar: Covariates[DV]) => {
+        val Kstar = getK(Xstar, X, kernel)
+        val scores = Kstar * alphaStar
+        toNEV((0 until Xstar.length).map(i => chooseClass(scores(i, ::).t)))
+      })
+    } else Left(OptimizationFail(optimalState))
   }
 
   def chooseClass(v: DenseVector[Double]) = {
@@ -80,7 +89,9 @@ object ClassifierApp extends App {
   val (covariates, classes) = sampleClassificationDataset.apply(p"1000").sample(getGen(13L))
   val (covariatesTest, classesTest) = sampleClassificationDataset.apply(p"1000").sample(getGen(12223L))
 
-  val yhat = KernelRidgeClassifier.krc(1d, Matern72(1))(covariates, classes)(covariatesTest)
-  println(yhat.toVector.zip(classesTest.toVector).count{case(a,b)=> a == b})
-  println(yhat.toVector.zip(classesTest.toVector))
+
+  val alpha = DenseVector[Double](breeze.stats.distributions.Gaussian(0, 1).sample(4000): _*)
+  val optimizer = new LBFGS[DV](FirstOrderMinimizer.defaultConvergenceCheck[DV](-1, 1e-3), 7)
+  val yhat = KernelRidgeClassifier.krc(1d, Matern72(1), optimizer, alpha)(covariates, classes).map(_(covariatesTest))
+  println(yhat.map(_.toVector.zip(classesTest.toVector).count{case(a,b)=> a == b}))
 }

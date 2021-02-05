@@ -1,6 +1,7 @@
 package de.wias.nonparregboot
 
-import scalapurerandom.{NEV, PosInt, Random}
+import breeze.optimize.{DiffFunction, FirstOrderMinimizer}
+import scalapurerandom.{DV, NEV, PosInt, Random}
 
 package object classifier {
   type Classes = NEV[Int]
@@ -9,5 +10,20 @@ package object classifier {
 
   type Classifier[In] = Covariates[In] => Classes
 
-  type ClassifierTrainer[In] = (Covariates[In], Classes) => Classifier[In]
+  type ClassifierTrainer[In] = (Covariates[In], Classes) => OptRes[Classifier[In]]
+
+  type Optimizer = FirstOrderMinimizer[DV, DiffFunction[DV]]
+
+  type OptimizerState = FirstOrderMinimizer[DV, DiffFunction[DV]]#State
+
+  class OptimizationFail(val state: OptimizerState) {
+    override def toString: String = s"value=${state.value} iter=${state.iter} " +
+      s"convergence reason=${state.convergenceReason} convergence info=${state.convergenceInfo}"
+  }
+
+  object OptimizationFail {
+    def apply(state: OptimizerState) = new OptimizationFail(state)
+  }
+
+  type OptRes[T] = Either[OptimizationFail, T]
 }

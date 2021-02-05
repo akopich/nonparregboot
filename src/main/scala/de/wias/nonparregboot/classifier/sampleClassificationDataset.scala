@@ -12,7 +12,7 @@ object sampleClassificationDataset {
     val randInstance: Random[(DV, Int)] = for {
                           y <- int(4)
                           center = means(y)
-                          x <- centeredGaussian(diag(DenseVector(0.05, 0.05))) + const(center)
+                          x <- centeredGaussian(diag(DenseVector(0.3, 0.3))) + const(center)
                         } yield (x, y)
     val randData: Random[NEL[(DV, Int)]] = replicateA(n, randInstance)
 
