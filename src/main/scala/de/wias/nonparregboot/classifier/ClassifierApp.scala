@@ -23,6 +23,8 @@ object ClassifierApp extends IOApp {
     val n = p"1000"
     val testSize = p"1000"
 
+    val metric = accuracy |+| entropy
+
     val result = (for {
       (covariates, classes)         <- sampleClassificationDataset(n)
       (covariatesTest, classesTest) <- sampleClassificationDataset(testSize)
@@ -30,9 +32,8 @@ object ClassifierApp extends IOApp {
     } yield {
       val optimizedClassifier = krc(0.1d, Matern72(1), optimizer, init)(covariates, classes)
 
-      val functor = implicitly[Functor[Either[OptimizationFail, *]]] compose implicitly[Functor[NEV]]
-      val yhat = functor.fmap(optimizedClassifier.map(_ (covariatesTest)))(_.predictedClass)
-      yhat.map(_.toVector.zip(classesTest.toVector).count { case (a, b) => a == b })
+      val yhat = optimizedClassifier.map(_ (covariatesTest))
+      yhat.map(metric(classesTest, _))
     }).sample(getGen(13L))
 
     result match {

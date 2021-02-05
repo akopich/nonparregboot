@@ -7,7 +7,7 @@ import scalapurerandom.DV
 case class ClassificationResult(scores: DV) {
   def predictedClass: Int = scores.toScalaVector().zipWithIndex.maxBy(_._1)._2
 
-  def probs: DV = {
+  def probabilities: DV = {
     val exps = exp(scores)
     exps / sum(exps)
   }

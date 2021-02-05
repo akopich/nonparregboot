@@ -3,7 +3,7 @@ package de.wias.nonparregboot
 import breeze.optimize.{DiffFunction, FirstOrderMinimizer}
 import scalapurerandom.{DV, NEV, PosInt, Random}
 
-package object classifier {
+package object classifier extends Metrics {
   type Classes = NEV[Int]
 
   type ClassificationDataSampler[In] = PosInt => Random[(Covariates[In], Classes)]
@@ -26,4 +26,6 @@ package object classifier {
   }
 
   type OptRes[T] = Either[OptimizationFail, T]
+
+  type Metric = (NEV[Int], NEV[ClassificationResult]) => Map[String, Double]
 }
