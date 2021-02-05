@@ -35,9 +35,9 @@ object KernelRidgeClassifier {
     val Kalphak = K * alpha // n * m
     val expKalphak: DM = exp(Kalphak)
     val yindexed = y.toVector.filter(_ < m).zipWithIndex
-    val denominator = sum(expKalphak(::, *))  // length = n
+    val denominator = sum(expKalphak(*, ::))  // length = n
 
-    val termI = -yindexed.map {case(yi, i) => Kalphak(i, yi) }.sum
+    val termI = -yindexed.map { case(yi, i) => Kalphak(i, yi) }.sum
     val termII = sum(log(denominator))
     val termIII = 0.5 * lambda *  sum(alpha *:* Kalphak)
 
@@ -49,7 +49,7 @@ object KernelRidgeClassifier {
       grad(::, yi) -= K(::, i)
     }
 
-    val p = expKalphak(*, ::) / denominator.t // n * m
+    val p = expKalphak(::, *) / denominator // n * m
     grad += K * p
     grad += Kalphak * lambda
 

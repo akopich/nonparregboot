@@ -24,7 +24,7 @@ object ClassifierApp extends IOApp {
       (covariatesTest, classesTest) <- sampleClassificationDataset.apply(testSize)
       init <- gaussianInitGenerator(classes) * const(1)
     } yield {
-      val optimizedClassifier = KernelRidgeClassifier.krc(1d, Matern72(1), optimizer, init)(covariates, classes)
+      val optimizedClassifier = krc(0.1d, Matern72(1), optimizer, init)(covariates, classes)
       val yhat = optimizedClassifier.map(_ (covariatesTest)).map(_.map(_.predictedClass))
       yhat.map(_.toVector.zip(classesTest.toVector).count { case (a, b) => a == b })
     }).sample(getGen(13L))
