@@ -74,14 +74,11 @@ object KernelRidgeClassifier {
       Right((Xstar: Covariates[DV]) => {
         val Kstar = getK(Xstar, X, kernel)
         val scores = Kstar * alphaStar
-        toNEV((0 until Xstar.length).map(i => chooseClass(scores(i, ::).t)))
+        toNEV((0 until Xstar.length).map(i => ClassificationResult(scores(i, ::).t)))
       })
     } else Left(OptimizationFail(optimalState))
   }
 
-  def chooseClass(v: DenseVector[Double]): Int = {
-    v.toScalaVector().zipWithIndex.maxBy(_._1)._2
-  }
 
   def gaussianInitGenerator(Y: Classes): Random[DV] = {
     val m = Y.maximum + 1

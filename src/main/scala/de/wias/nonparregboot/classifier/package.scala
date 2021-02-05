@@ -8,7 +8,7 @@ package object classifier {
 
   type ClassificationDataSampler[In] = PosInt => Random[(Covariates[In], Classes)]
 
-  type Classifier[In] = Covariates[In] => Classes
+  type Classifier[In] = Covariates[In] => NEV[ClassificationResult]
 
   type ClassifierTrainer[In] = (Covariates[In], Classes) => OptRes[Classifier[In]]
 
