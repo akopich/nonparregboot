@@ -11,8 +11,9 @@ import de.wias.nonparregboot.{Covariates, Kernel, Matern52, Matern72}
 import scalapurerandom._
 import cats._
 import cats.data._
+import cats.effect.{ExitCode, IO, IOApp}
 import cats.implicits._
-import de.wias.nonparregboot.Plot.covToDV
+import spire.syntax.field._
 
 import java.awt.Color
 
@@ -78,20 +79,15 @@ object KernelRidgeClassifier {
     } else Left(OptimizationFail(optimalState))
   }
 
-  def chooseClass(v: DenseVector[Double]) = {
+  def chooseClass(v: DenseVector[Double]): Int = {
     v.toScalaVector().zipWithIndex.maxBy(_._1)._2
   }
 
+  def gaussianInitGenerator(Y: Classes): Random[DV] = {
+    val m = Y.maximum + 1
+    val n = Y.length
+
+    standardGaussian(m * n)
+  }
 }
 
-object ClassifierApp extends App {
-  println(BLAS.getInstance().getClass.getName)
-  val (covariates, classes) = sampleClassificationDataset.apply(p"1000").sample(getGen(13L))
-  val (covariatesTest, classesTest) = sampleClassificationDataset.apply(p"1000").sample(getGen(12223L))
-
-
-  val alpha = DenseVector[Double](breeze.stats.distributions.Gaussian(0, 1).sample(4000): _*)
-  val optimizer = new LBFGS[DV](FirstOrderMinimizer.defaultConvergenceCheck[DV](-1, 1e-3), 7)
-  val yhat = KernelRidgeClassifier.krc(1d, Matern72(1), optimizer, alpha)(covariates, classes).map(_(covariatesTest))
-  println(yhat.map(_.toVector.zip(classesTest.toVector).count{case(a,b)=> a == b}))
-}
