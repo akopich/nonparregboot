@@ -4,10 +4,11 @@ package de.wias.nonparregboot.classifier
 import spire.syntax.field._
 import breeze.linalg.{DenseVector, diag}
 import cats.data.NonEmptyVector
+import de.wias.nonparregboot.Covariates
 import scalapurerandom._
 
 object sampleClassificationDataset {
-  val apply: ClassificationDataSampler[DV] = (n: PosInt) => {
+  def apply(n: PosInt): Random[(Covariates[DV], Classes)] = {
     val means = Vector(DenseVector(1d, 1d), DenseVector(-1d, -1d), DenseVector(1d, -1d), DenseVector(-1d, 1d))
     val randInstance: Random[(DV, Int)] = for {
                           y <- int(4)
