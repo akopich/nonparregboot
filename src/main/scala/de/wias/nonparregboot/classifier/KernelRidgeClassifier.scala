@@ -7,13 +7,15 @@ import breeze.optimize.{DiffFunction, FirstOrderMinimizer, LBFGS}
 import breeze.plot.{Figure, plot, scatter}
 import com.github.fommil.netlib.BLAS
 import de.wias.nonparregboot.KRR.getK
-import de.wias.nonparregboot.{Covariates, Kernel, Matern52, Matern72}
+import de.wias.nonparregboot.{Covariates, Kernel, Matern52, Matern72, Responses}
 import scalapurerandom._
 import cats._
 import cats.data._
 import cats.effect.{ExitCode, IO, IOApp}
 import cats.implicits._
 import spire.syntax.field._
+import de.wias.nonparregboot.ToDV._
+import Function._
 
 import java.awt.Color
 
@@ -58,8 +60,7 @@ object KernelRidgeClassifier {
 
   def krc(lambda: Double,
           kernel: Kernel,
-          optimizer: Optimizer,
-          init: DV): ClassifierTrainer[DV] = (X: Covariates[DV], Y: Classes) => {
+          optimizer: Optimizer): ClassifierTrainer[DV] = (X: Covariates[DV], Y: Classes, init: Init) => {
     val m = Y.maximum + 1
     val n = X.length
     val K = getK(X, X, kernel)
@@ -79,6 +80,17 @@ object KernelRidgeClassifier {
     } else Left(OptimizationFail(optimalState))
   }
 
+  def fastKRC(P: PosInt, trainer: ClassifierTrainer[DV])(implicit psf: PSFunctor[NEV]) =
+    (X: Covariates[DV], y: Classes, init: Init) => {
+      val chunkSize = PosInt((X.size / P.toInt).toInt)
+      val groupedResponses: NEV[Classes] = group(y, chunkSize)
+      val groupedCovariates: NEV[Covariates[DV]] = group(X, chunkSize)
+      val groupedInits: NEV[Init] = group(toNEV(init.toScalaVector()), PosInt(init.size / P.toInt)).map(_.toVector.toDV)
+      val grouped: NEV[(Covariates[DV], Classes, Init)] = groupedCovariates.zipWith(groupedResponses) { (x, y) => (x, y) }
+                                                                     .zipWith(groupedInits){ case((x1,x2), y) => (x1, x2, y) }
+
+      (grouped pmap tupled(trainer)).sequence
+  }
 
   def gaussianInitGenerator(Y: Classes): Random[DV] = {
     val m = Y.maximum + 1

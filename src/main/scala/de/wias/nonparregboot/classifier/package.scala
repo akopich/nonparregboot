@@ -1,7 +1,9 @@
 package de.wias.nonparregboot
 
+import algebra.ring.AdditiveSemigroup
 import breeze.optimize.{DiffFunction, FirstOrderMinimizer}
-import scalapurerandom.{DV, NEV, PosInt, Random}
+import scalapurerandom.{DV, NEV, PSFunctor, PosInt, Random}
+import scalapurerandom._
 
 package object classifier extends Metrics {
   type Classes = NEV[Int]
@@ -10,7 +12,22 @@ package object classifier extends Metrics {
 
   type Classifier[In] = Covariates[In] => NEV[ClassificationResult]
 
-  type ClassifierTrainer[In] = (Covariates[In], Classes) => OptRes[Classifier[In]]
+  type EnsembleClassifier[In] = NEV[Classifier[In]]
+
+  def ensemblePredict[In](ec: EnsembleClassifier[In])
+                         (implicit psf: PSFunctor[NEV]): Classifier[In] = (x: Covariates[In]) => {
+    toNEV((ec: NEV[Classifier[In]]).pmap(_(x).toVector).toVector.transpose)
+      .pmap(vec => aggregate(toNEV(vec)))
+  }
+
+  def aggregate(rs: NEV[ClassificationResult]): ClassificationResult = {
+    import SeqReducibleInstance._
+    ClassificationResult(average(rs.map(_.scores)))
+  }
+
+  type Init = DV
+
+  type ClassifierTrainer[In] = (Covariates[In], Classes, Init) => OptRes[Classifier[In]]
 
   type Optimizer = FirstOrderMinimizer[DV, DiffFunction[DV]]
 
@@ -27,5 +44,14 @@ package object classifier extends Metrics {
 
   type OptRes[T] = Either[OptimizationFail, T]
 
-  type Metric = (NEV[Int], NEV[ClassificationResult]) => Map[String, Double]
+  type MetricValue = Map[String, Double]
+
+  implicit def metricValueIsAverageble = new Averageble[MetricValue] {
+    import algebra.instances.all._
+    override val semi: AdditiveSemigroup[MetricValue] = implicitly[AdditiveSemigroup[MetricValue]]
+
+    override def |/|(x: MetricValue, cnt: PosInt): MetricValue = x.map{case(key, value) => (key, value |/| cnt)}
+  }
+
+  type Metric = (NEV[Int], NEV[ClassificationResult]) => MetricValue
 }

@@ -33,4 +33,6 @@ libraryDependencies += "org.scalactic" %% "scalactic" % "3.1.2"
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.1.2" % "test"
 
-libraryDependencies += "org.slf4j" % "slf4j-simple" % "1.7.30" % Test
+libraryDependencies += "org.slf4j" % "slf4j-simple" % "1.7.30"
+
+libraryDependencies += "org.platanios" %% "tensorflow" % "0.5.10" classifier "linux"

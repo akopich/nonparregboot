@@ -18,7 +18,7 @@ object KRR {
     val groupedCovariates: NEV[Covariates[DV]] = group(x, chunkSize)
     val grouped: NEV[(Covariates[DV], Responses)] = groupedCovariates.zipWith(groupedResponses) { (x, y) => (x, y) }
 
-    grouped pmap  tupled(learner)
+    grouped pmap tupled(learner)
   }
 
   def krr(rho: Double, kernel: Kernel): Learner[DV] = (X: Covariates[DV], Y: Responses) => (Xstar: Covariates[DV]) => {

@@ -44,7 +44,7 @@ object ExperimentResultPlot extends App {
     plot(ps, probs, colorcode = "" + color, name = t.toString)
   }
 
-  val results = io.Source.fromFile(new File("results")).getLines().toList.map(parse)
+  val results = scala.io.Source.fromFile(new File("results")).getLines().toList.map(parse)
   val groupedByT = results.groupBy(_.t).toList.sortBy(_._1).map{ case(t, rs) => (t, rs.sortBy(_.P)) }
   groupedByT.unzip._2.map(_.map(_.coverage).mkString(", ")).map(s => "[" + s+"]").foreach(println)
 
