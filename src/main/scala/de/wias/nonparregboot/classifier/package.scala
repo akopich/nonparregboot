@@ -2,10 +2,12 @@ package de.wias.nonparregboot
 
 import algebra.ring.AdditiveSemigroup
 import breeze.optimize.{DiffFunction, FirstOrderMinimizer}
+import org.platanios.tensorflow.api.ops.variables.Variable
+import org.platanios.tensorflow.api.tensors.Tensor
 import scalapurerandom.{DV, NEV, PSFunctor, PosInt, Random}
 import scalapurerandom._
 
-package object classifier extends Metrics {
+package object classifier extends Metrics with TensorflowBreezeConverters with OutputEvaluates {
   type Classes = NEV[Int]
 
   type ClassificationDataSampler[In] = PosInt => Random[(Covariates[In], Classes)]
@@ -54,4 +56,10 @@ package object classifier extends Metrics {
   }
 
   type Metric = (NEV[Int], NEV[ClassificationResult]) => MetricValue
+
+  type TFloat = Tensor[Float]
+
+  type TI = Tensor[Int]
+
+  type VF = Variable[Float]
 }
