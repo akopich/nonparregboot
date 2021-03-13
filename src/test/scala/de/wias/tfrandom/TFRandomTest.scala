@@ -45,9 +45,11 @@ class TFRandomTest extends AnyFlatSpec with OutputEvaluates {
       (meanHat, covHat)
     })
     val (meanHat, covHat) = r.sample(13)
-    println(meanHat.evaluate.summarize())
-    println(covHat.evaluate.summarize())
+    assertTensorsEqual(meanHat.evaluate, mean, 0.1f)
+    assertTensorsEqual(covHat.evaluate, cov, 0.1f)
   }
+
+  private def assertTensorsEqual(a: Output[Float], b: Output[Float], eps: Float) = assert((a - b).abs.max().evaluate.scalar < eps)
 
   private def test[T: ClassTag](name: String)(generator: (Shape, Seed) => Output[T]) = {
     val SHAPE = Shape(100)
