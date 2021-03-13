@@ -23,8 +23,8 @@ class SeedStream(private val digest: MessageDigest,
 object SeedStream {
   private[tfrandom] lazy val BIG_INT_MAX = BigInteger.valueOf(Integer.MAX_VALUE)
 
-  def apply(initialSeed: Int) = {
-    val digest = MessageDigest.getInstance("SHA-256")
+  def apply(initialSeed: Int): SeedStream = {
+    val digest = MessageDigest.getInstance("SHA-512")
     new SeedStream(digest, initialSeed, 0)
   }
 }
