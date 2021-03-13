@@ -8,21 +8,36 @@ import org.platanios.tensorflow.api.{Output, Shape, Tensor, tf}
 import scala.reflect.ClassTag
 
 class TFRandomTest extends AnyFlatSpec with OutputEvaluates {
-  test("uniform01[Float]")(uniform01[Float])
+  val SHAPE = Shape(10000)
 
-  test("uniform01[Double]")(uniform01[Double])
+  test("uniform01[Float]")(uniform01Gen[Float](SHAPE))
 
-  test("int[Int]")(intGen(5))
+  test("uniform01[Double]")(uniform01Gen[Double](SHAPE))
 
-  test("int[Long]")(intGen(5L))
+  test("int[Int]")(intGen(5, SHAPE))
 
-  test("gaussian[Float]")(gaussian[Float])
+  test("int[Long]")(intGen(5L, SHAPE))
 
-  test("gaussian[Double]")(gaussian[Double])
+  test("gaussian[Float]")(gaussianGen[Float](SHAPE))
+
+  test("gaussian[Double]")(gaussianGen[Double](SHAPE))
+
+  "uniform01" should "sample differently when called twice in a row" in {
+    val rCheck: Random[Boolean] = for {
+      first  <- uniform01[Float](SHAPE)
+      second <- uniform01[Float](SHAPE)
+    } yield areTensorsEqual(first, second, 1e-3f)
+    assert(!rCheck.sample(13))
+  }
+
+  "uniform01" should "sample the same when called twice with the same seed" in {
+    assert(areTensorsEqual(uniform01[Float](SHAPE).sample(13),
+      uniform01[Float](SHAPE).sample(13), 1e-3f))
+  }
 
   "standard normals" should "be around 0" in {
     val r: Random[Float] = for {
-      normals <- standardGaussian[Float](Shape(10000))
+      normals <- standardGaussian[Float](SHAPE)
     } yield {
       normals.mean().evaluate.scalar
     }
@@ -32,7 +47,7 @@ class TFRandomTest extends AnyFlatSpec with OutputEvaluates {
     assert(empiricalMean < 0.01 && empiricalMean > -0.01)
   }
 
-  "multivariate normal" should "work" in {
+  "multivariate normal" should "meet the first two moments" in {
     val mean = Tensor(1f, 1000f)
     val cov = Tensor(Tensor(1f, 0.2f), Tensor(0.2f, 2f))
     val root = chol(cov)
@@ -45,24 +60,23 @@ class TFRandomTest extends AnyFlatSpec with OutputEvaluates {
       (meanHat, covHat)
     })
     val (meanHat, covHat) = r.sample(13)
-    assertTensorsEqual(meanHat.evaluate, mean, 0.1f)
-    assertTensorsEqual(covHat.evaluate, cov, 0.1f)
+    assert(areTensorsEqual(meanHat.evaluate, mean, 0.1f))
+    assert(areTensorsEqual(covHat.evaluate, cov, 0.1f))
   }
 
-  private def assertTensorsEqual(a: Output[Float], b: Output[Float], eps: Float) = assert((a - b).abs.max().evaluate.scalar < eps)
+  private def areTensorsEqual(a: Output[Float], b: Output[Float], eps: Float) = (a - b).abs.max().evaluate.scalar < eps
 
-  private def test[T: ClassTag](name: String)(generator: (Shape, Seed) => Output[T]) = {
-    val SHAPE = Shape(100)
+  private def test[T: ClassTag](name: String)(generator: Seed => Output[T]) = {
     name should "be reproducible" in {
-      val r1 = generator(SHAPE, 0).evaluate
-      val r2 = generator(SHAPE, 0).evaluate
+      val r1 = generator(0).evaluate
+      val r2 = generator(0).evaluate
 
       assert(r1.toArray === r2.toArray)
     }
 
     name should "depend on seed" in {
-      val r1 = generator(SHAPE, 0).evaluate
-      val r2 = generator(SHAPE, 13).evaluate
+      val r1 = generator(0).evaluate
+      val r2 = generator(13).evaluate
 
       assert(r1.toArray !== r2.toArray)
     }

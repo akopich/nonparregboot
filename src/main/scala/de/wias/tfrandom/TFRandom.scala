@@ -15,17 +15,13 @@ import org.platanios.tensorflow.api.ops.math.Math
 object TFRandom {
   private[tfrandom] lazy val seeder = State[SeedStream, Seed](seedStream => (seedStream.next(), seedStream.seed()))
 
-  def uniform01[T: TF : IsHalfOrFloatOrDouble](shape: Shape): RandomOutput[T] = seeder.map { seed =>
-      uniform01(shape, seed)
-  }
+  private[tfrandom] def wrapInState[T](f: Seed => T): Random[T] = seeder map f
 
-  def int(max: Int, shape: Shape): RandomOutput[Int] = seeder.map { seed =>
-    intGen[Int](max)(shape, seed)
-  }
+  def uniform01[T: TF : IsHalfOrFloatOrDouble](shape: Shape): RandomOutput[T] = wrapInState(uniform01Gen(shape))
 
-  def long(max: Long, shape: Shape): RandomOutput[Long] = seeder.map { seed =>
-    intGen[Long](max)(shape, seed)
-  }
+  def int(max: Int, shape: Shape): RandomOutput[Int] = wrapInState(intGen[Int](max, shape))
+
+  def long(max: Long, shape: Shape): RandomOutput[Long] = wrapInState(intGen[Long](max, shape))
 
   def multivariateNormal[T: TF : IsHalfOrFloatOrDouble](batchSize: Shape, mean: Output[T], rootCov: Output[T]): RandomOutput[T] = {
     val shape: Shape = batchSize ++ mean.shape
@@ -35,23 +31,21 @@ object TFRandom {
   def gaussian[T: TF : IsHalfOrFloatOrDouble](mean: T, sd: T, shape: Shape): RandomOutput[T] =
     standardGaussian(shape).map(standard => standard * sd + mean)
 
-  def standardGaussian[T: TF : IsHalfOrFloatOrDouble](shape: Shape): RandomOutput[T] = seeder.map { seed =>
-    gaussian[T](shape, seed)
-  }
+  def standardGaussian[T: TF : IsHalfOrFloatOrDouble](shape: Shape): RandomOutput[T] = wrapInState(gaussianGen[T](shape))
 
-  private[tfrandom] def gaussian[T: TF: IsHalfOrFloatOrDouble](shape: Shape, seed: Seed) = {
+  private[tfrandom] def gaussianGen[T: TF: IsHalfOrFloatOrDouble](shape: Shape)(seed: Seed) = {
     opBuilderHelper("RandomNormal",
       "StatelessRandomNormal",
       (shape: Output[Int], Output(seed, seed)))
   }
 
-  private[tfrandom] def uniform01[T: TF: IsHalfOrFloatOrDouble](shape: Shape, seed: Seed) = {
+  private[tfrandom] def uniform01Gen[T: TF: IsHalfOrFloatOrDouble](shape: Shape)(seed: Seed) = {
     opBuilderHelper("RandomUniform",
       "StatelessRandomUniform",
       (shape: Output[Int], Output(seed, seed)))
   }
 
-  private[tfrandom] def intGen[T: IsIntOrLong: TF](max: T)(shape: Shape, seed: Seed) = {
+  private[tfrandom] def intGen[T: IsIntOrLong: TF](max: T, shape: Shape)(seed: Seed) = {
     val maxTensor : Output[T] = Tensor.ones[T](Shape()) * max    // there must be
     val zeroTensor: Output[T] = maxTensor - maxTensor           // a better way
     opBuilderHelper("RandomUniformInt",
