@@ -28,7 +28,6 @@ object TFKRC {
   def krc(lambda: Float,
           kernel: Kernel) = (X: Covariates[DV], Y: Classes, init: Init, Xstar: Covariates[DV]) => {
 
-    tf.randomNormal()
 
     val m = Y.maximum + 1
     val n = X.length
