@@ -2,53 +2,32 @@ package de.wias.nonparregboot
 
 import algebra.ring.AdditiveSemigroup
 import breeze.optimize.{DiffFunction, FirstOrderMinimizer}
+import de.wias.tfrandom.TFRandom
 import org.platanios.tensorflow.api.ops.variables.Variable
 import org.platanios.tensorflow.api._
 import scalapurerandom.{DV, NEV, PSFunctor, PosInt, Random}
 import scalapurerandom._
 
-package object classifier extends Metrics with TensorflowBreezeConverters with OutputEvaluates {
-  type Classes = Output[Int]
+package object classifier extends TensorflowBreezeConverters with OutputEvaluates with Metrics with TFRandom {
+  type Classes = Tensor[Int]
 
   type OFloat = Output[Float]
 
-  type Covariates = OFloat
+  type TFloat = Tensor[Float]
+
+  type Covariates = TFloat
 
   type ClassificationDataSampler = PosInt => Random[(Covariates, Classes)]
 
-  type Classifier[In] = Covariates => NEV[ClassificationResult]
+  type Kernel = (Covariates, Covariates) => OFloat
 
-  type EnsembleClassifier[In] = NEV[Classifier[In]]
+  type Classifier = Covariates => ClassificationResults
 
-  def ensemblePredict[In](ec: EnsembleClassifier[In])
-                         (implicit psf: PSFunctor[NEV]): Classifier[In] = (x: Covariates) => {
-    toNEV((ec: NEV[Classifier[In]]).pmap(_(x).toVector).toVector.transpose)
-      .pmap(vec => aggregate(toNEV(vec)))
-  }
+  type EnsembleClassifier = NEV[Classifier]
 
-  def aggregate(rs: NEV[ClassificationResult]): ClassificationResult = {
-    import SeqReducibleInstance._
-    ClassificationResult(average(rs.map(_.scores)))
-  }
+  type Init = OFloat
 
-  type Init = DV
-
-  type ClassifierTrainer[In] = (Covariates, Classes, Init) => OptRes[Classifier[In]]
-
-  type Optimizer = FirstOrderMinimizer[DV, DiffFunction[DV]]
-
-  type OptimizerState = FirstOrderMinimizer[DV, DiffFunction[DV]]#State
-
-  class OptimizationFail(val state: OptimizerState) {
-    override def toString: String = s"value=${state.value} iter=${state.iter} " +
-      s"convergence reason=${state.convergenceReason} convergence info=${state.convergenceInfo}"
-  }
-
-  object OptimizationFail {
-    def apply(state: OptimizerState) = new OptimizationFail(state)
-  }
-
-  type OptRes[T] = Either[OptimizationFail, T]
+  type ClassifierTrainer = (Covariates, Classes, Init) => Classifier
 
   type MetricValue = Map[String, Double]
 
@@ -59,9 +38,7 @@ package object classifier extends Metrics with TensorflowBreezeConverters with O
     override def |/|(x: MetricValue, cnt: PosInt): MetricValue = x.map{case(key, value) => (key, value |/| cnt)}
   }
 
-  type Metric = (NEV[Int], NEV[ClassificationResult]) => MetricValue
-
-  type TFloat = Tensor[Float]
+  type Metric = (Classes, ClassificationResults) => MetricValue
 
   type TI = Tensor[Int]
 

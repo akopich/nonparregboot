@@ -2,7 +2,7 @@ package de.wias.tfrandom
 
 import org.scalatest.flatspec.AnyFlatSpec
 
-class SeedStreamTest extends AnyFlatSpec {
+class SeedStreamTest extends AnyFlatSpec with TFRandom  {
   private lazy val seedStream = SeedStream(13)
 
   "SeedStream instantiated with the same initialSeed" should "give the same seed" in {
@@ -31,7 +31,6 @@ class SeedStreamTest extends AnyFlatSpec {
   }
 
   "seeder" should "not repeat seeds" in {
-    import de.wias.tfrandom.TFRandom._
     val isEqual = for {
       seed1 <- seeder
       seed2 <- seeder

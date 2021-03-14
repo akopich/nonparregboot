@@ -1,13 +1,12 @@
 package de.wias.tfrandom
 
 import org.scalatest.flatspec.AnyFlatSpec
-import TFRandom._
 import de.wias.nonparregboot.classifier.OutputEvaluates
-import org.platanios.tensorflow.api.{Output, Shape, Tensor, tf}
+import org.platanios.tensorflow.api.{Output, Shape, TF, Tensor, tf}
 
 import scala.reflect.ClassTag
 
-class TFRandomTest extends AnyFlatSpec with OutputEvaluates {
+class TFRandomTest extends AnyFlatSpec with OutputEvaluates with TFRandom {
   val SHAPE = Shape(10000)
 
   test("uniform01[Float]")(uniform01Gen[Float](SHAPE))
@@ -66,7 +65,7 @@ class TFRandomTest extends AnyFlatSpec with OutputEvaluates {
 
   private def areTensorsEqual(a: Output[Float], b: Output[Float], eps: Float) = (a - b).abs.max().evaluate.scalar < eps
 
-  private def test[T: ClassTag](name: String)(generator: Seed => Output[T]) = {
+  private def test[T: ClassTag: TF](name: String)(generator: Seed => Output[T]) = {
     name should "be reproducible" in {
       val r1 = generator(0).evaluate
       val r2 = generator(0).evaluate
