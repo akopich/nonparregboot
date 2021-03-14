@@ -4,23 +4,22 @@ package de.wias.nonparregboot.classifier
 import spire.syntax.field._
 import breeze.linalg.{DenseVector, diag}
 import cats.data.NonEmptyVector
-import de.wias.nonparregboot.Covariates
-import scalapurerandom._
+import cats.kernel.Monoid
+import de.wias.tfrandom.{Random, RandomOutput}
+import de.wias.tfrandom.TFRandom._
+import org.platanios.tensorflow.api.{Shape, TF, tf}
+import org.platanios.tensorflow.api.core.types.IsHalfOrFloatOrDouble
+import org.platanios.tensorflow.api.tensors.Tensor
+import scalapurerandom.PosInt
 
 object sampleClassificationDataset {
-  def apply(n: PosInt): Random[(Covariates[DV], Classes)] = {
-    val means = Vector(DenseVector(1d, 1d), DenseVector(-1d, -1d), DenseVector(1d, -1d), DenseVector(-1d, 1d))
-    val randInstance: Random[(DV, Int)] = for {
-                          y <- int(4)
-                          center = means(y)
-                          x <- centeredGaussian(diag(DenseVector(1d,1d)*0.1d)) + const(center)
-                        } yield (x, y)
-    val randData: Random[NEL[(DV, Int)]] = replicateA(n, randInstance)
+  def apply(sigma: Float)(n: PosInt): Random[(Covariates, Classes)] = {
+    val means = Tensor(Tensor(1f, 1f), Tensor(-1f, -1f), Tensor(1f, -1f), Tensor(-1f, 1f))
 
-    randData.map(nel2nev).map(nel => {
-        (nel.map(_._1), nel.map(_._2))
-    })
+    for {
+      classes <- int(4, Shape(n.toInt))
+      centers = tf.gather(means, classes, axis = Tensor.zeros[Int](Shape()))
+      noise   <- gaussian(0f, sigma, Shape(n.toInt, 2))
+    } yield (centers + noise, classes)
   }
-
-  def nel2nev[T](nel: NEL[T]): NEV[T] = NonEmptyVector.of(nel.head, nel.tail :_*)
 }

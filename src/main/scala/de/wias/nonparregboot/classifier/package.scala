@@ -3,21 +3,25 @@ package de.wias.nonparregboot
 import algebra.ring.AdditiveSemigroup
 import breeze.optimize.{DiffFunction, FirstOrderMinimizer}
 import org.platanios.tensorflow.api.ops.variables.Variable
-import org.platanios.tensorflow.api.tensors.Tensor
+import org.platanios.tensorflow.api._
 import scalapurerandom.{DV, NEV, PSFunctor, PosInt, Random}
 import scalapurerandom._
 
 package object classifier extends Metrics with TensorflowBreezeConverters with OutputEvaluates {
-  type Classes = NEV[Int]
+  type Classes = Output[Int]
 
-  type ClassificationDataSampler[In] = PosInt => Random[(Covariates[In], Classes)]
+  type OFloat = Output[Float]
 
-  type Classifier[In] = Covariates[In] => NEV[ClassificationResult]
+  type Covariates = OFloat
+
+  type ClassificationDataSampler = PosInt => Random[(Covariates, Classes)]
+
+  type Classifier[In] = Covariates => NEV[ClassificationResult]
 
   type EnsembleClassifier[In] = NEV[Classifier[In]]
 
   def ensemblePredict[In](ec: EnsembleClassifier[In])
-                         (implicit psf: PSFunctor[NEV]): Classifier[In] = (x: Covariates[In]) => {
+                         (implicit psf: PSFunctor[NEV]): Classifier[In] = (x: Covariates) => {
     toNEV((ec: NEV[Classifier[In]]).pmap(_(x).toVector).toVector.transpose)
       .pmap(vec => aggregate(toNEV(vec)))
   }
@@ -29,7 +33,7 @@ package object classifier extends Metrics with TensorflowBreezeConverters with O
 
   type Init = DV
 
-  type ClassifierTrainer[In] = (Covariates[In], Classes, Init) => OptRes[Classifier[In]]
+  type ClassifierTrainer[In] = (Covariates, Classes, Init) => OptRes[Classifier[In]]
 
   type Optimizer = FirstOrderMinimizer[DV, DiffFunction[DV]]
 
