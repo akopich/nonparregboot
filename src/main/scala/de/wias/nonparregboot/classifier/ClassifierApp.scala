@@ -24,7 +24,7 @@ object ClassifierApp extends IOApp with AveragebleHelper with NatHelperTrait wit
     val kernel: Kernel = Matern72(1f)
     val lambda = 1f
 
-    val classifierTrainer = TFKRC.krc(lambda, kernel)
+    val classifierTrainer = TFKRC.krc(lambda, kernel, 1e-5f)
 
     val n = 123
     val testSize = 30

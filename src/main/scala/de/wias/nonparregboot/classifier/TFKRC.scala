@@ -24,7 +24,8 @@ object TFKRC {
 
 
   def krc(lambda: Float,
-          kernel: Kernel): ClassifierTrainer = (X: Covariates, Y: Classes, init: Init) => {
+          kernel: Kernel,
+          tol: Float): ClassifierTrainer = (X: Covariates, Y: Classes, init: Init) => {
     val K = kernel(X, X)
 
     val alpha = tf.variable[Float]("alpha", init.shape, initializer = tf.ConstantInitializer(init))
@@ -35,10 +36,18 @@ object TFKRC {
     val session = Session()
     session.run(targets = tf.globalVariablesInitializer())
 
-    for (i <- 0 to 300) {
-      val loss = session.run(targets = trainOp, fetches = lossOp)
-      println(loss.summarize())
+
+    val iters = LazyList.from(0)
+    val losses =  iters.map { iter =>
+      val lossT = session.run(targets = trainOp, fetches = lossOp)
+      val loss = lossT.scalar
+      println(f"iter=${iter} loss=${loss}")
+      loss
     }
+
+    iters.zip(losses).zip(losses.tail).takeWhile { case((iter, prevLoss), loss) =>
+      math.abs(prevLoss - loss) / prevLoss > tol
+    }.toList
 
     val alphaStar = session.run(fetches = alpha.value)
 
