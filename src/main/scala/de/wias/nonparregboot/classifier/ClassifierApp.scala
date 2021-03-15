@@ -6,7 +6,7 @@ import cats.data._
 import cats.implicits._
 import cats.effect.{ExitCode, IO, IOApp}
 import com.github.fommil.netlib.BLAS
-import de.wias.tfrandom.Random
+import de.wias.tfrandom.{Random, sampleMean}
 import org.platanios.tensorflow.api.core.Shape
 import scalapurerandom.{AveragebleHelper, HasSizeHelper, NEL, NatHelperTrait}
 import spire.syntax.field._
@@ -40,8 +40,7 @@ object ClassifierApp extends IOApp with AveragebleHelper with NatHelperTrait wit
     }
 
     val iters = p"10"
-    val avgMetric = replicateA(iters, result).map((nel: NEL[MetricValue]) => average(nel))
-    printIO(avgMetric.sample(13)).as(ExitCode.Success)
-
+    val avgMetricValue: Random[MetricValue] = sampleMean(result, iters)
+    printIO(avgMetricValue.sample(13)).as(ExitCode.Success)
   }
 }
