@@ -11,14 +11,19 @@ import org.platanios.tensorflow.api.core.Shape
 import scalapurerandom.{AveragebleHelper, HasSizeHelper, NEL, NatHelperTrait}
 import spire.syntax.field._
 import scalapurerandom.SeqReducibleInstance._
-
+import org.log4s
+import scribe.Logger
+import scribe.Level
 
 object ClassifierApp extends IOApp with AveragebleHelper with NatHelperTrait with HasSizeHelper {
-
-
-  def printIO(s: Any) = IO{println(s)}
+  def printIO(s: Any) = IO(println(s))
 
   override def run(args: List[String]): IO[ExitCode] = {
+    Logger.root.clearHandlers()
+                .clearModifiers()
+                .withHandler(minimumLevel = Some(Level.Info))
+                .replace()
+
     val metric = accuracy + entropy
 
     val kernel: Kernel = Matern72(1f)

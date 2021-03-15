@@ -6,9 +6,11 @@ import scalapurerandom.{DV, toNEV}
 import cats._
 import cats.data._
 import cats.implicits._
+import org.log4s.Logger
+import scribe.Logging
 
 
-object TFKRC {
+object TFKRC  extends Logging {
 
   def getLoss(K: OFloat, Y: Classes, alpha: VF, lambda: Float) = {
     import org.platanios.tensorflow.api._
@@ -36,19 +38,19 @@ object TFKRC {
     val session = Session()
     session.run(targets = tf.globalVariablesInitializer())
 
-
     val iters = LazyList.from(0)
     val losses =  iters.map { iter =>
       val lossT = session.run(targets = trainOp, fetches = lossOp)
       val loss = lossT.scalar
-      println(f"iter=${iter} loss=${loss}")
+      logger.debug(f"iter=$iter loss=$loss")
       loss
     }
 
-    iters.zip(losses).zip(losses.tail).takeWhile { case((iter, prevLoss), loss) =>
+    val ((totalIters, _), loss) = iters.zip(losses).zip(losses.tail).takeWhile { case((iter, prevLoss), loss) =>
       math.abs(prevLoss - loss) / prevLoss > tol
-    }.toList
+    }.last
 
+    logger.info(f"Fitted KRC in $totalIters iterations with loss=$loss")
     val alphaStar = session.run(fetches = alpha.value)
 
     (Xstar: Covariates) => {
