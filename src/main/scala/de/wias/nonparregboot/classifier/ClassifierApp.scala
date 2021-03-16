@@ -40,7 +40,7 @@ object ClassifierApp extends IOApp with AveragebleHelper with NatHelperTrait wit
     val optimizer = tf.train.Adam(0.01f)
     val classifierTrainer = TFKRC.krc(lambda, kernel, optimizer, 1e-5f)
 
-    val n = 1234
+    val n = 123
     val testSize = 30
     val m = 4
     val result: Random[MetricValue] = for {

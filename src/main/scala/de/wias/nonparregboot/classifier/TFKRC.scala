@@ -10,6 +10,8 @@ import org.log4s.Logger
 import org.platanios.tensorflow.api.ops.training.optimizers.Optimizer
 import scribe.Logging
 
+import scala.annotation.tailrec
+
 
 object TFKRC  extends Logging {
 
@@ -44,17 +46,19 @@ object TFKRC  extends Logging {
     val session = Session()
     session.run(targets = tf.globalVariablesInitializer())
 
-    val iters = LazyList.from(1)
-    val losses =  iters.map { iter =>
-      val lossT = session.run(targets = trainOp, fetches = lossOp)
-      val loss = lossT.scalar
-      logger.debug(f"iter=$iter loss=$loss")
-      loss
+    @tailrec
+    def loop(iter: Int, prevLoss: Float, stop: Boolean): (Int, Float) = {
+      if (stop) {
+        (iter+1, prevLoss)
+      } else {
+        val lossT = session.run(targets = trainOp, fetches = lossOp)
+        val loss = lossT.scalar
+        logger.debug(f"iter=$iter loss=$loss")
+        loop(iter+1, loss, iter > 2 && math.abs(prevLoss - loss) / prevLoss < tol)
+      }
     }
 
-    val ((totalIters, _), loss) = iters.zip(losses).zip(losses.tail).takeWhile { case((_, prevLoss), loss) =>
-      math.abs(prevLoss - loss) / prevLoss > tol
-    }.last
+    val (totalIters,  loss) = loop(0, 0f, false)
 
     logger.info(f"Fitted KRC in $totalIters iterations with loss=$loss")
     val alphaStar = session.run(fetches = alpha.value)
