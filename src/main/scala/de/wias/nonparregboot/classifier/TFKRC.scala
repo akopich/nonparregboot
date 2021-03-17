@@ -1,19 +1,13 @@
 package de.wias.nonparregboot.classifier
 
-import breeze.linalg.DenseMatrix
 import org.platanios.tensorflow.api.{Graph, Output, Session, Shape, Tensor, tf}
-import scalapurerandom.{DV, toNEV}
 import cats._
 import cats.data._
 import cats.implicits._
-import org.log4s.Logger
+import io.odin.Logger
 import org.platanios.tensorflow.api.ops.training.optimizers.Optimizer
-import scribe.Logging
 
-import scala.annotation.tailrec
-
-
-object TFKRC  extends Logging {
+object TFKRC {
 
   def getLoss(K: OFloat, Ywithrange: Output[Int], alpha: VF, lambda: Float) = {
     import org.platanios.tensorflow.api._
@@ -28,10 +22,10 @@ object TFKRC  extends Logging {
   }
 
 
-  def krc(lambda: Float,
+  def krc[F[_]: Monad](lambda: Float,
           kernel: Kernel,
           optimizer: Optimizer,
-          tol: Float): ClassifierTrainer = (X: Covariates, Y: Classes, init: Init) => {
+          tol: Float)(implicit logger: Logger[F]): ClassifierTrainer[F] = (X: Covariates, Y: Classes, init: Init) => {
     val K = kernel(X, X)
 
     val alpha = tf.variable[Float]("alpha", init.shape, initializer = tf.ConstantInitializer(init))
@@ -46,26 +40,27 @@ object TFKRC  extends Logging {
     val session = Session()
     session.run(targets = tf.globalVariablesInitializer())
 
-    @tailrec
-    def loop(iter: Int, prevLoss: Float, stop: Boolean): (Int, Float) = {
-      if (stop) {
-        (iter+1, prevLoss)
-      } else {
-        val lossT = session.run(targets = trainOp, fetches = lossOp)
-        val loss = lossT.scalar
-        logger.debug(f"iter=$iter loss=$loss")
-        loop(iter+1, loss, iter > 2 && math.abs(prevLoss - loss) / prevLoss < tol)
-      }
+    val step = StateT[F, (Int, Float), (Int, Float, Float)] { case (iter, prev) =>
+      for {
+        loss <- session.run(targets = trainOp, fetches = lossOp).scalar.pure[F]
+        _    <- logger.debug(f"iter=$iter loss=$loss")
+      } yield ((iter+1, loss), (iter+1, prev, loss))
     }
 
-    val (totalIters,  loss) = loop(0, 0f, false)
+    val chainOfSteps = step.untilM_(for {
+      (iter, prev, loss) <- step
+    } yield iter > 2 && math.abs(prev - loss) / prev < tol).run((0, 0f))
 
-    logger.info(f"Fitted KRC in $totalIters iterations with loss=$loss")
-    val alphaStar = session.run(fetches = alpha.value)
+    for {
+      ((totalIters, loss), _) <- chainOfSteps
+      _ <- logger.info(f"Fitted KRC in $totalIters iterations with loss=$loss")
+    } yield {
+      val alphaStar = session.run(fetches = alpha.value)
 
-    (Xstar: Covariates) => {
-      val Kstar = kernel(Xstar, X)
-      ClassificationResults(tf.matmul(Kstar, alphaStar).evaluate)
+      (Xstar: Covariates) => {
+        val Kstar = kernel(Xstar, X)
+        ClassificationResults(tf.matmul(Kstar, alphaStar).evaluate)
+      }
     }
   }
 }

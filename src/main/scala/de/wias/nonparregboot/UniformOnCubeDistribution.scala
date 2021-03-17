@@ -10,5 +10,5 @@ case class UniformOnCubeDistribution(dim : Int)(implicit rand: RandBasis = Rand)
 
   override def logNormalizer: Double = log(1)
 
-  override def draw(): DV = DenseVector.fill(dim)(rand.uniform.get)
+  override def draw(): DV = DenseVector.fill(dim)(rand.uniform.get())
 }

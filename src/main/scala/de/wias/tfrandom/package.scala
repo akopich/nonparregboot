@@ -18,6 +18,11 @@ package object tfrandom extends AveragebleHelper with HasSizeHelper {
     def sample(seed: Int): T = r.runA(SeedStream(seed)).value
   }
 
+
+  implicit class RichRandomT[M[_]: Monad, T](private val r: RandomT[M, T]) {
+    def sample(seed: Int): M[T] = r.runA(SeedStream(seed))
+  }
+
   def sampleMean[M[_]: Monad, T: Averageble](random: RandomT[M, T], n : PosInt)
                                             (implicit nelReducer: PSReducible[NEL]): RandomT[M, T] =
     replicateA(n, random).map(average(_))

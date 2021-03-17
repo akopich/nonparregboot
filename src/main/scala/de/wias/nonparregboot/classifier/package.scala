@@ -27,7 +27,7 @@ package object classifier extends TensorflowBreezeConverters with OutputEvaluate
 
   type Init = OFloat
 
-  type ClassifierTrainer = (Covariates, Classes, Init) => Classifier
+  type ClassifierTrainer[F[_]] = (Covariates, Classes, Init) => F[Classifier]
 
   type MetricValue = Map[String, Double]
 
