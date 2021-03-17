@@ -3,9 +3,12 @@ package de.wias.nonparregboot.classifier
 import org.platanios.tensorflow.api.{Graph, Output, Session, Shape, Tensor, tf}
 import cats._
 import cats.data._
+import cats.effect.Effect
 import cats.implicits._
 import io.odin.Logger
 import org.platanios.tensorflow.api.ops.training.optimizers.Optimizer
+
+import scala.annotation.tailrec
 
 object TFKRC {
 
@@ -21,11 +24,10 @@ object TFKRC {
     termI +  termII + termIII
   }
 
-
   def krc[F[_]: Monad](lambda: Float,
-          kernel: Kernel,
-          optimizer: Optimizer,
-          tol: Float)(implicit logger: Logger[F]): ClassifierTrainer[F] = (X: Covariates, Y: Classes, init: Init) => {
+                        kernel: Kernel,
+                        optimizer: Optimizer,
+                        tol: Float)(implicit logger: Logger[F]): ClassifierTrainer[F] = (X: Covariates, Y: Classes, init: Init) => {
     val K = kernel(X, X)
 
     val alpha = tf.variable[Float]("alpha", init.shape, initializer = tf.ConstantInitializer(init))
@@ -40,20 +42,20 @@ object TFKRC {
     val session = Session()
     session.run(targets = tf.globalVariablesInitializer())
 
-    val step = StateT[F, (Int, Float), (Int, Float, Float)] { case (iter, prev) =>
+    val step = StateT[F, (Int, Float, Float), Unit] { case (iter, _, prev) =>
       for {
         loss <- session.run(targets = trainOp, fetches = lossOp).scalar.pure[F]
         _    <- logger.debug(f"iter=$iter loss=$loss")
-      } yield ((iter+1, loss), (iter+1, prev, loss))
-    }
+      } yield ((iter+1, prev, loss), ())
+    }.get
 
-    val chainOfSteps = step.untilM_(for {
-      (iter, prev, loss) <- step
-    } yield iter > 2 && math.abs(prev - loss) / prev < tol).run((0, 0f))
+    val chainOfSteps = step.iterateUntil { case(iter, prev, loss) =>
+      iter > 2 && math.abs(prev - loss) / prev < tol
+    }.runS((0, 0f, 0f))
 
     for {
-      ((totalIters, loss), _) <- chainOfSteps
-      _ <- logger.info(f"Fitted KRC in $totalIters iterations with loss=$loss")
+      (totalIters, _, loss) <- chainOfSteps
+      _                     <- logger.info(f"Fitted KRC in $totalIters iterations with loss=$loss")
     } yield {
       val alphaStar = session.run(fetches = alpha.value)
 
