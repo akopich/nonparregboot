@@ -19,6 +19,7 @@ import cats.data._
 import cats.effect.{ExitCode, IO, IOApp}
 import cats.implicits._
 import scalapurerandom._
+import scalapurerandom.RandomMT._
 import ParFunctorInstances._
 import ParReducibleInstance._
 

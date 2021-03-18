@@ -10,6 +10,7 @@ import Bootstrap._
 import cats.~>
 import org.apache.commons.math3.stat.interval.{ConfidenceInterval, IntervalUtils}
 import scalapurerandom._
+import scalapurerandom.RandomMT._
 import SeqFunctorInstances._
 import SeqReducibleInstance._
 
@@ -110,7 +111,7 @@ object Main extends IOApp {
   }
 
   def print(res: ExperimentResult): ConfRandomIO[DV, Unit] = ReaderT { conf =>
-    fromState(IO { println((conf, res).show) }.pure[Random])
+    StateT.fromState(IO { println((conf, res).show) }.pure[Random])
   }
 
   def runAverage: ConfRandomIO[DV, Unit] = for {

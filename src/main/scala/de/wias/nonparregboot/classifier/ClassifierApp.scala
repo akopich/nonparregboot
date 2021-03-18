@@ -5,14 +5,14 @@ import cats._
 import cats.data.StateT.fromState
 import cats.data._
 import cats.implicits._
-import com.github.fommil.netlib.BLAS
-import de.wias.tfrandom.{Random, RandomT, sampleMean}
 import io.odin.{Level, Logger, consoleLogger}
 import org.platanios.tensorflow.api.core.Shape
 import scalapurerandom.{AveragebleHelper, HasSizeHelper, NEL, NatHelperTrait}
 import spire.syntax.field._
 import scalapurerandom.SeqReducibleInstance._
+import scalapurerandom._
 import cats.effect.{IO, _}
+import de.wias.tfrandom.SeedStream
 import io.odin.formatter.Formatter
 import org.platanios.tensorflow.api.tf
 
@@ -57,6 +57,6 @@ object ClassifierApp extends IOApp with AveragebleHelper with NatHelperTrait wit
     val iters = p"10"
     val avgMetricValue: RandomT[IO, Map[String, Double]] = sampleMean(fromState(result), iters)
 
-    timeAndPrint(avgMetricValue.sample(13)).as(ExitCode.Success)
+    timeAndPrint(avgMetricValue.sample(SeedStream(13))).as(ExitCode.Success)
   }
 }

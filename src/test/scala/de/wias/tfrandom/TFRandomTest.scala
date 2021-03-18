@@ -3,11 +3,15 @@ package de.wias.tfrandom
 import org.scalatest.flatspec.AnyFlatSpec
 import de.wias.nonparregboot.classifier.OutputEvaluates
 import org.platanios.tensorflow.api.{Output, Shape, TF, Tensor, tf}
+import scalapurerandom._
+
 
 import scala.reflect.ClassTag
 
 class TFRandomTest extends AnyFlatSpec with OutputEvaluates with TFRandom {
   val SHAPE = Shape(10000)
+
+  val seedStream = SeedStream(13)
 
   test("uniform01[Float]")(uniform01Gen[Float](SHAPE))
 
@@ -26,12 +30,12 @@ class TFRandomTest extends AnyFlatSpec with OutputEvaluates with TFRandom {
       first  <- uniform01[Float](SHAPE)
       second <- uniform01[Float](SHAPE)
     } yield areTensorsEqual(first, second, 1e-3f)
-    assert(!rCheck.sample(13))
+    assert(!rCheck.sample(seedStream))
   }
 
   "uniform01" should "sample the same when called twice with the same seed" in {
-    assert(areTensorsEqual(uniform01[Float](SHAPE).sample(13),
-      uniform01[Float](SHAPE).sample(13), 1e-3f))
+    assert(areTensorsEqual(uniform01[Float](SHAPE).sample(seedStream),
+      uniform01[Float](SHAPE).sample(seedStream), 1e-3f))
   }
 
   "standard normals" should "be around 0" in {
@@ -41,7 +45,7 @@ class TFRandomTest extends AnyFlatSpec with OutputEvaluates with TFRandom {
       normals.mean().evaluate.scalar
     }
 
-    val empiricalMean = r.sample(13)
+    val empiricalMean = r.sample(seedStream)
 
     assert(empiricalMean < 0.01 && empiricalMean > -0.01)
   }
@@ -58,7 +62,7 @@ class TFRandomTest extends AnyFlatSpec with OutputEvaluates with TFRandom {
       val covHat = tf.matmul(centered, centered, transposeA = true) / n
       (meanHat, covHat)
     })
-    val (meanHat, covHat) = r.sample(13)
+    val (meanHat, covHat) = r.sample(seedStream)
     assert(areTensorsEqual(meanHat.evaluate, mean, 0.1f))
     assert(areTensorsEqual(covHat.evaluate, cov, 0.1f))
   }

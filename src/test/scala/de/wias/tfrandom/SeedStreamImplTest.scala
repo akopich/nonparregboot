@@ -2,17 +2,17 @@ package de.wias.tfrandom
 
 import org.scalatest.flatspec.AnyFlatSpec
 
-class SeedStreamTest extends AnyFlatSpec with TFRandom  {
-  private lazy val seedStream = SeedStream(13)
+class SeedStreamImplTest extends AnyFlatSpec with TFRandom  {
+  private lazy val seedStream = SeedStreamImpl(13)
 
   "SeedStream instantiated with the same initialSeed" should "give the same seed" in {
-    val sameSeedStream = SeedStream(13)
+    val sameSeedStream = SeedStreamImpl(13)
 
     assert(seedStream.seed() === sameSeedStream.seed())
   }
 
   "SeedStream instantiated with different initialSeed" should "givea  different seed" in {
-    val otherSeedStream = SeedStream(42)
+    val otherSeedStream = SeedStreamImpl(42)
 
     assert(seedStream.seed() !== otherSeedStream.seed())
   }

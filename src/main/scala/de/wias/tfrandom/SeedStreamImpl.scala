@@ -6,25 +6,25 @@ import java.security.MessageDigest
 /**
  * Here we mimic the behaviour of `tfp.util.SeedStream`
  */
-class SeedStream(private val digest: MessageDigest,
-                 private val initialSeed: Int,
-                 private val counter: Int) {
+private[tfrandom] class SeedStreamImpl(private val digest: MessageDigest,
+                     private val initialSeed: Int,
+                     private val counter: Int) {
   def seed(): Seed = {
     val str = (initialSeed, counter).toString()
     val hash = digest.digest(str.getBytes("UTF-8"))
     val bigSeed = new BigInteger(hash)
-    val bigModulo = bigSeed.mod(SeedStream.BIG_INT_MAX)
+    val bigModulo = bigSeed.mod(SeedStreamImpl.BIG_INT_MAX)
     bigModulo.intValue()
   }
 
-  def next(): SeedStream = new SeedStream(digest, initialSeed, counter + 1)
+  def next(): SeedStreamImpl = new SeedStreamImpl(digest, initialSeed, counter + 1)
 }
 
-object SeedStream {
+private[tfrandom] object SeedStreamImpl {
   private[tfrandom] lazy val BIG_INT_MAX = BigInteger.valueOf(Integer.MAX_VALUE)
 
-  def apply(initialSeed: Int): SeedStream = {
+  def apply(initialSeed: Int): SeedStreamImpl = {
     val digest = MessageDigest.getInstance("SHA-512")
-    new SeedStream(digest, initialSeed, 0)
+    new SeedStreamImpl(digest, initialSeed, 0)
   }
 }

@@ -5,6 +5,7 @@ import cats._
 import cats.data._
 import cats.implicits._
 import scalapurerandom._
+import scalapurerandom.RandomMT._
 
 object sampleDataset {
   def apply(xGen:     Random[Double],

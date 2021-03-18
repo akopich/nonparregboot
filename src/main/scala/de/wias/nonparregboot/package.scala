@@ -7,6 +7,7 @@ import cats._
 import cats.data._
 import cats.implicits._
 import scalapurerandom._
+import scalapurerandom.RandomMT._
 
 package object nonparregboot {
   type Kernel = (DV, DV) => Double

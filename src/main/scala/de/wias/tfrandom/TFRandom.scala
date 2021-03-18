@@ -13,7 +13,7 @@ import org.platanios.tensorflow.api.ops.Output
 import org.platanios.tensorflow.api.ops.math.Math
 
 trait TFRandom {
-  private[tfrandom] lazy val seeder = State[SeedStream, Seed](seedStream => (seedStream.next(), seedStream.seed()))
+  private[tfrandom] lazy val seeder = State[SeedStreamImpl, Seed](seedStream => (seedStream.next(), seedStream.seed()))
 
   private[tfrandom] def wrapInState[T](f: Seed => T): Random[T] = seeder map f
 

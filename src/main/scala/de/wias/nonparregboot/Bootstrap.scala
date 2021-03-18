@@ -1,6 +1,7 @@
 package de.wias.nonparregboot
 
-import scalapurerandom.{size, _}
+import scalapurerandom._
+import scalapurerandom.RandomMT._
 import breeze.linalg._
 import cats._
 import cats.data._

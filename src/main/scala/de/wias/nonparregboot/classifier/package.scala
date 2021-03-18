@@ -2,10 +2,11 @@ package de.wias.nonparregboot
 
 import algebra.ring.AdditiveSemigroup
 import breeze.optimize.{DiffFunction, FirstOrderMinimizer}
-import de.wias.tfrandom.TFRandom
+import cats.data.{State, StateT}
+import de.wias.tfrandom._
 import org.platanios.tensorflow.api.ops.variables.Variable
 import org.platanios.tensorflow.api._
-import scalapurerandom.{DV, NEV, PSFunctor, PosInt, Random}
+import scalapurerandom.{DV, NEV, PSFunctor, PosInt}
 import scalapurerandom._
 
 package object classifier extends TensorflowBreezeConverters with OutputEvaluates with Metrics with TFRandom {
@@ -16,6 +17,10 @@ package object classifier extends TensorflowBreezeConverters with OutputEvaluate
   type TFloat = Tensor[Float]
 
   type Covariates = TFloat
+
+  type Random[T] = State[SeedStream, T]
+
+  type RandomT[M[_], T] = StateT[M, SeedStream, T]
 
   type ClassificationDataSampler = PosInt => Random[(Covariates, Classes)]
 
