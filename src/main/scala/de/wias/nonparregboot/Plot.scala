@@ -28,6 +28,8 @@ object Plot extends IOApp {
 
 
   override def run(args: List[String]): IO[ExitCode] = {
+    val targetXGen = mixture(gaussian(0d, 1d), gaussian(1d, 1d))
+      .iterateUntil(x => x > 0d && x < 1d)
 
     val xGen = uniform01
     val noiseGen = (x: Double) => gaussian(0d, 1d * Math.exp(abs(Math.pow(x - 0.5, 2d)) ) )
@@ -35,14 +37,15 @@ object Plot extends IOApp {
     val n = pow(p"2", p"14")
     val P = pow(p"2", p"7")
     val sampler = sampleDataset(xGen, noiseGen, fstar)(n)
-    val targets: Covariates[DV] = toNEV(linspace(0d, 1d, length = 10).valuesIterator.map(_.toDV).toVector)
+    val targetSampler = sampleDataset(targetXGen, noiseGen, fstar)(p"10")
 
     val s = 3d
     val rho = 0.001 * math.pow(n.toInt, -2 * s / (2 * s + 1))
     val el = fastKRR(P, rho, Matern52(1d))
 
     val rio: RandomT[IO, Unit] = for {
-      (xs, ys, fs) <- sampler.transformF(_.value.pure[IO])
+      (xs, ys, _) <- sampler.transformF(_.value.pure[IO])
+      (targets, _, _) <- targetSampler.transformF(_.value.pure[IO])
       (fhat, randomBounds) = predictWithConfidence(bootPar(p"1000", bootAvgOnceWithWeights), 0.95, el(xs, ys), targets)
       (u, l) <- randomBounds
     } yield {

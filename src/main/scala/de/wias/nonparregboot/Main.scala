@@ -14,6 +14,9 @@ import SeqFunctorInstances._
 import SeqReducibleInstance._
 
 object Main extends IOApp {
+  def bimodal: Random[Double] = mixture(gaussian(0d, 1d), gaussian(1d, 1d))
+    .iterateUntil(x => x > 0d && x < 1d)
+
   type Conf[In, T] = Reader[ExperimentConfig[In], T]
   def Conf[In, T] = Reader[ExperimentConfig[In], T] _
 
@@ -26,20 +29,21 @@ object Main extends IOApp {
 
   implicit def tupleAvg(implicit avg: Averageble[Double]): Averageble[ExperimentResult] = avg.compose(avg)
 
-  case class ExperimentConfig[In](sampler: DataSampler[In],
-                              trainSize: PosInt, targetSize: PosInt, partitions: PosInt,
-                              s: Double, kernel: Kernel,
-                              bootIter: PosInt,
-                              bootOnce: NEV[Responses] => Random[Responses],
-                              experIter: PosInt,
-                              checkCoverage: (NEV[Responses] => Random[NEV[Responses]],
-                                               EnsemblePredictor[In],
-                                               Covariates[In], FStarValues
-                                             ) => Random[ExperimentResult]
+  case class ExperimentConfig[In](trainSampler: DataSampler[In],
+                                  targetSampler: DataSampler[In],
+                                  trainSize: PosInt, targetSize: PosInt, partitions: PosInt,
+                                  s: Double, kernel: Kernel,
+                                  bootIter: PosInt,
+                                  bootOnce: NEV[Responses] => Random[Responses],
+                                  experIter: PosInt,
+                                  checkCoverage: (NEV[Responses] => Random[NEV[Responses]],
+                                                   EnsemblePredictor[In],
+                                                   Covariates[In], FStarValues
+                                                 ) => Random[ExperimentResult]
                              )
 
   implicit def showConf[In]: Show[(ExperimentConfig[In], (Double, Double))] = {
-    case (ExperimentConfig(_, trainSize, targetSize, partitions, _, _, _, _, iters, _), (rmse, coverage)) =>
+    case (ExperimentConfig(_, _, trainSize, targetSize, partitions, _, _, _, _, iters, _), (rmse, coverage)) =>
       val cucsesses = (coverage * iters.toInt.toDouble).toInt
       val interval95 = IntervalUtils.getWilsonScoreInterval(iters.toInt, cucsesses, 0.95)
       val interval99 = IntervalUtils.getWilsonScoreInterval(iters.toInt, cucsesses, 0.99)
@@ -49,12 +53,12 @@ object Main extends IOApp {
   }
 
   def trainData: ConfRandom[DV, (Covariates[DV], Responses)] = ConfRandom { conf => for {
-      (x, y, _) <- conf.sampler(conf.trainSize)
+      (x, y, _) <- conf.trainSampler(conf.trainSize)
     } yield (x, y)
   }
 
   def targetData: ConfRandom[DV, (Covariates[DV], FStarValues)] = ConfRandom { conf => for {
-      (t, _, ft) <- conf.sampler(conf.targetSize)
+      (t, _, ft) <- conf.targetSampler(conf.targetSize)
     } yield (t, ft)
   }
 
@@ -103,10 +107,12 @@ object Main extends IOApp {
   }
 
   def configure(n: PosInt, P: PosInt, t: PosInt, bootIter: PosInt, avgIter: PosInt): ExperimentConfig[DV] =  {
-    val xGen = uniform01
+    val trainXGen = uniform01
+    val targetXGen = bimodal
     val noiseGen = (x: Double) => gaussian(0d, Math.exp(2d * Math.abs(x - 0.5)))
-    val sampler = sampleDataset(xGen, noiseGen, x => sin(x * math.Pi * 2d))
-    ExperimentConfig(sampler, n, t, P, 3d, Matern72(1d), bootIter, bootAvgOnceWithReturn, avgIter, checkCoverageBounds)
+    val trainSampler = sampleDataset(trainXGen, noiseGen, x => sin(x * math.Pi * 2d))
+    val targetSampler = sampleDataset(targetXGen, noiseGen, x => sin(x * math.Pi * 2d))
+    ExperimentConfig(trainSampler, targetSampler, n, t, P, 3d, Matern72(1d), bootIter, bootAvgOnceWithReturn, avgIter, checkCoverageBounds)
   }
 
   def print(res: ExperimentResult): ConfRandomIO[DV, Unit] = ReaderT { conf =>
@@ -120,7 +126,7 @@ object Main extends IOApp {
 
   override def run(args: List[String]): IO[ExitCode] = {
     val functor = implicitly[Functor[List]] compose implicitly[Functor[List]]
-    val ps :: ts :: Nil = functor.map(List(8 to 12 toList, 1 to 9 toList))(PosInt.apply _ >>>  (pow(p"2", _)))
+    val ps :: ts :: Nil = functor.map(List(6 to 12 toList, 1 to 9 toList))(PosInt.apply _ >>>  (pow(p"2", _)))
 
     val gen = getGen(13L)
 
