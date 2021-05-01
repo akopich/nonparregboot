@@ -2,9 +2,8 @@ package de.wias
 
 import cats.data.State
 import org.platanios.tensorflow.api.ops.Output
-import scalapurerandom.AveragebleHelper
 
-package object tfrandom extends AveragebleHelper {
+package object tfrandom {
   type Seed = Int
 
   type Random[T] = State[SeedStream, T]

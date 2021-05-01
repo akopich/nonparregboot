@@ -9,6 +9,7 @@ import ToDV._
 import cats.effect.{ContextShift, IO}
 import de.wias.nonparregboot.Bootstrap.intVector
 import org.apache.commons.math3.stat.descriptive.rank.Percentile
+import scalapurerandom.RandomMT._
 
 object Bootstrap {
   def predictWithBall[In, F[_]: Applicative](boot: NEV[Responses] => RandomT[F, NEV[Responses]],
