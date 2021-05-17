@@ -62,7 +62,7 @@ object Plot extends IOApp {
       }
 
 //      p += scatter(covToDV(xs), ys, _ => 0.01, colors = _ => Color.WHITE)
-      figure.saveas(args.head)
+      figure.saveas("Plot.pdf")
     }
     rio.sample(getGen(103)).as(ExitCode.Success)
   }
